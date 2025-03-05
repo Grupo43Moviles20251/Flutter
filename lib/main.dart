@@ -119,7 +119,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     textStyle: TextStyle( fontSize: 16),
                   ),
-                  child: const Text('Sing in', style: TextStyle(color: Colors.white , fontFamily: 'MontserratAlternates')),
+                  child: const Text('Sign in', style: TextStyle(color: Colors.white , fontFamily: 'MontserratAlternates')),
                 ),
 
                 SizedBox(height: 20),
