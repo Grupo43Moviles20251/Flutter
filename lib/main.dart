@@ -1,0 +1,172 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  // This widget is the root of your application.
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'FreshLink',
+      theme: ThemeData(
+       
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF38677A)),
+      ),
+      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  
+  const MyHomePage({super.key, required this.title});
+  
+  final String title;
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isObscure = true;
+
+  
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child : Center (
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Image.asset('assets/logo.png', height: 120),
+                SizedBox(height: 24),
+                const Text(
+                  'Login',
+                  style: TextStyle(
+                    fontFamily: 'MontserratAlternates',
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0), // Color cuando el campo NO está enfocado
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5), // Color cuando el campo ESTÁ enfocado
+                    ),
+                  ), 
+                ), 
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: !_isObscure,
+                  decoration: InputDecoration(
+                    labelText: "Password",
+                    labelStyle: TextStyle(fontFamily: 'MontserratAlternates'), 
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5),
+                    ),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isObscure ? Icons.visibility : Icons.visibility_off,
+                        color: Color(0xFF38677A), // Color del icono de visibilidad
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isObscure = !_isObscure;
+                        });
+                      },
+                    ),
+                  ),
+                ),
+              
+                SizedBox(height: 15),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      // Aquí irá la navegación a la pantalla de recuperación
+                    },
+                    child: Text("Forgot your password?", style: TextStyle(color: Color(0xFF38677A), fontFamily: 'MontserratAlternates')),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () {
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF38677A),
+                    padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    textStyle: TextStyle( fontSize: 16),
+                  ),
+                  child: const Text('Sing in', style: TextStyle(color: Colors.white , fontFamily: 'MontserratAlternates')),
+                ),
+
+                SizedBox(height: 20),
+
+                Text("Or you can", style: TextStyle(color: Color(0xFF38677A) , fontFamily: 'MontserratAlternates')),
+
+                SizedBox(height: 10),
+
+                // Botón Sign in with Google
+                ElevatedButton(
+                  onPressed: () {
+                    // Aquí irá la autenticación con Google
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    backgroundColor: Color(0xFF38677A),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.login, color: Colors.white),
+                      SizedBox(width: 10),
+                      Text("Sign in with Google", style: TextStyle(color: Colors.white, fontFamily: 'MontserratAlternates')),
+                    ],
+                  ),
+                ),
+
+                 SizedBox(height: 20),
+
+                // Enlace "Sign Up"
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Never experienced FreshLink?"),
+                    TextButton(
+                      onPressed: () {
+                        // Aquí irá la navegación a la pantalla de registro
+                      },
+                      child: Text("Sign Up", style: TextStyle(color: Color(0xFF38677A), fontWeight: FontWeight.bold, fontFamily: 'MontserratAlternates')),
+                    ),
+              ],
+            ),
+          ],
+          ),
+        ),
+      ),  
+    ),
+    );
+  }
+}
