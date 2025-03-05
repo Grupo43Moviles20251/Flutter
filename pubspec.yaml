@@ -52,10 +52,10 @@ dev_dependencies:
 # The following section is specific to Flutter packages.
 flutter:
   fonts:
-    - family: MonserrateAlternates
+    - family: MontserratAlternates
       fonts:
-        - asset: assets/fonts/MonserrateAlternates-Regular.ttf
-        - asset: assets/fonts/MonserrateAlternates-Bold.ttf
+        - asset: assets/fonts/MontserratAlternates-Regular.ttf
+        - asset: assets/fonts/MontserratAlternates-Bold.ttf
   assets:
     - assets/logo.png
 
