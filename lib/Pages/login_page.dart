@@ -1,5 +1,5 @@
+import 'package:first_app/Services/auth_services.dart';
 import 'package:flutter/material.dart';
-
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
 
@@ -7,15 +7,16 @@ class LoginPage extends StatefulWidget{
   State<StatefulWidget> createState() {
     return _LoginPageState();
   }
-
 }
 
 
 class _LoginPageState extends State<LoginPage>{
+  final GlobalKey<FormState>  _loginFormKey = GlobalKey();
+
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  bool _isObscure = true;
+  bool _isObscure = false;
 
   @override
   Widget build(BuildContext context) {
@@ -43,45 +44,55 @@ class _LoginPageState extends State<LoginPage>{
                 ),
               ),
               const SizedBox(height: 24),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0), // Color cuando el campo NO está enfocado
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5), // Color cuando el campo ESTÁ enfocado
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: !_isObscure,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5),
-                  ),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isObscure ? Icons.visibility : Icons.visibility_off,
-                      color: Color(0xFF38677A), // Color del icono de visibilidad
+              Form(
+                key: _loginFormKey,
+                child: Column(
+                  children: [
+                    TextField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        labelText: 'Email',
+                        labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0), // Color cuando el campo NO está enfocado
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5), // Color cuando el campo ESTÁ enfocado
+                        ),
+                      ),
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isObscure = !_isObscure;
-                      });
-                    },
-                  ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      obscureText: !_isObscure,
+                      decoration: InputDecoration(
+                        labelText: "Password",
+                        labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF38677A), width: 2.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5),
+                        ),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _isObscure ? Icons.visibility : Icons.visibility_off,
+                            color: Color(0xFF38677A), // Color del icono de visibilidad
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isObscure = !_isObscure;
+                            });
+                          },
+                        ),
+                      ),
+                    ),
+
+                  ]
+
                 ),
+
               ),
 
               SizedBox(height: 15),
@@ -96,7 +107,12 @@ class _LoginPageState extends State<LoginPage>{
 
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                   if(_loginFormKey.currentState?.validate()?? false){
+                     _loginFormKey.currentState?.save();
+
+                     bool result = await AuthService().login(_emailController.text, _passwordController.text) ;
+                   }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF38677A),
@@ -115,6 +131,7 @@ class _LoginPageState extends State<LoginPage>{
               // Botón Sign in with Google
               ElevatedButton(
                 onPressed: () {
+
                   // Aquí irá la autenticación con Google
                 },
                 style: ElevatedButton.styleFrom(
@@ -130,6 +147,7 @@ class _LoginPageState extends State<LoginPage>{
                   ],
                 ),
               ),
+
 
               SizedBox(height: 20),
 
