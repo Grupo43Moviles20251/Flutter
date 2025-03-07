@@ -153,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text("Never experienced FreshLink?"),
+                    Text("Never experienced FreshLink?", style: TextStyle(fontFamily: 'MontserratAlternates')),
                     TextButton(
                       onPressed: () {
                         // Aquí irá la navegación a la pantalla de registro
