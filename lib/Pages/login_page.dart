@@ -112,15 +112,7 @@ class _LoginPageState extends State<LoginPage>{
 
               ),
 
-              SizedBox(height: 15),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    // Aquí irá la navegación a la pantalla de recuperación
-                  },
-                  child: Text("Forgot your password?", style: TextStyle(color: Color(0xFF38677A), fontFamily: 'MontserratAlternates')),
-                ),
-              ),
+
 
               const SizedBox(height: 24),
               ElevatedButton(
@@ -150,7 +142,7 @@ class _LoginPageState extends State<LoginPage>{
               ElevatedButton(
                 onPressed: () async {
                   await _viewModel.loginWithGoogle(context);
-                  // Aquí irá la autenticación con Google
+
                 },
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -181,7 +173,6 @@ class _LoginPageState extends State<LoginPage>{
                         context,
                         MaterialPageRoute(builder: (context) => SignUpPage()),
                       );
-                      // Aquí irá la navegación a la pantalla de registro
                     },
                     child: Text("Sign Up", style: TextStyle(color: Color(0xFF38677A), fontWeight: FontWeight.bold, fontFamily: 'MontserratAlternates')),
                   ),
