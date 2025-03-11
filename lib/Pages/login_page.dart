@@ -1,4 +1,5 @@
-import 'package:first_app/Services/auth_services.dart';
+import 'package:first_app/Pages/login_viewmodel.dart';
+import 'package:first_app/Repositories/login_repository.dart';
 import 'package:flutter/material.dart';
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
@@ -16,7 +17,9 @@ class _LoginPageState extends State<LoginPage>{
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  final LoginViewModel _viewModel = LoginViewModel(AuthRepository());
   bool _isObscure = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +27,7 @@ class _LoginPageState extends State<LoginPage>{
       body: SafeArea(child: _buildUI()),
     );
   }
+
 
   Widget _buildUI(){
     return Padding(
@@ -110,9 +114,10 @@ class _LoginPageState extends State<LoginPage>{
                 onPressed: () async {
                    if(_loginFormKey.currentState?.validate()?? false){
                      _loginFormKey.currentState?.save();
-
-                     bool result = await AuthService().login(_emailController.text, _passwordController.text) ;
-                   }
+                      final _email = _emailController.text;
+                      final _password = _passwordController.text;
+                      await _viewModel.login(_email, _password);
+                     }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF38677A),
