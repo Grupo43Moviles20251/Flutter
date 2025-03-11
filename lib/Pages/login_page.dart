@@ -112,7 +112,15 @@ class _LoginPageState extends State<LoginPage>{
 
               ),
 
-
+              SizedBox(height: 15),
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    // Aquí irá la navegación a la pantalla de recuperación
+                  },
+                  child: Text("Forgot your password?", style: TextStyle(color: Color(0xFF38677A), fontFamily: 'MontserratAlternates')),
+                ),
+              ),
 
               const SizedBox(height: 24),
               ElevatedButton(
