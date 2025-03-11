@@ -1,4 +1,6 @@
-import 'package:first_app/Services/auth_services.dart';
+import 'package:first_app/Pages/login_viewmodel.dart';
+import 'package:first_app/Pages/signup_page.dart';
+import 'package:first_app/Repositories/login_repository.dart';
 import 'package:flutter/material.dart';
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
@@ -16,7 +18,9 @@ class _LoginPageState extends State<LoginPage>{
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  final LoginViewModel _viewModel = LoginViewModel(AuthRepository());
   bool _isObscure = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +28,7 @@ class _LoginPageState extends State<LoginPage>{
       body: SafeArea(child: _buildUI()),
     );
   }
+
 
   Widget _buildUI(){
     return Padding(
@@ -48,9 +53,15 @@ class _LoginPageState extends State<LoginPage>{
                 key: _loginFormKey,
                 child: Column(
                   children: [
-                    TextField(
+                    TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      validator: (value){
+                        if(value == null || !value.contains("@")){
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
@@ -63,9 +74,15 @@ class _LoginPageState extends State<LoginPage>{
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _passwordController,
                       obscureText: !_isObscure,
+                      validator: (value){
+                        if(value == null || value ==""){
+                          return "Enter a valid password";
+                        }
+                        return null;
+                      },
                       decoration: InputDecoration(
                         labelText: "Password",
                         labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
@@ -110,9 +127,10 @@ class _LoginPageState extends State<LoginPage>{
                 onPressed: () async {
                    if(_loginFormKey.currentState?.validate()?? false){
                      _loginFormKey.currentState?.save();
-
-                     bool result = await AuthService().login(_emailController.text, _passwordController.text) ;
-                   }
+                      final _email = _emailController.text;
+                      final _password = _passwordController.text;
+                      await _viewModel.login(_email, _password, context);
+                     }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF38677A),
@@ -130,9 +148,9 @@ class _LoginPageState extends State<LoginPage>{
 
               // Botón Sign in with Google
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  await _viewModel.loginWithGoogle(context);
 
-                  // Aquí irá la autenticación con Google
                 },
                 style: ElevatedButton.styleFrom(
                   padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
@@ -158,7 +176,11 @@ class _LoginPageState extends State<LoginPage>{
                   Text("Never experienced FreshLink?", style: TextStyle(fontFamily: 'MontserratAlternates')),
                   TextButton(
                     onPressed: () {
-                      // Aquí irá la navegación a la pantalla de registro
+                      if (!context.mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                      );
                     },
                     child: Text("Sign Up", style: TextStyle(color: Color(0xFF38677A), fontWeight: FontWeight.bold, fontFamily: 'MontserratAlternates')),
                   ),
