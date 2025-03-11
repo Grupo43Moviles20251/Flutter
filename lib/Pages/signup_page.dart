@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class SignUpPage extends StatefulWidget{
   @override
@@ -13,7 +13,7 @@ class _SignUpPageState extends State<SignUpPage>{
 
   @override
   Widget build(BuildContext context) {
-    throw UnimplementedError();
+    return Text("Olas");
   }
 
 }
