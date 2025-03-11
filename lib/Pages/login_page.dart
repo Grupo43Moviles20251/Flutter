@@ -1,4 +1,5 @@
 import 'package:first_app/Pages/login_viewmodel.dart';
+import 'package:first_app/Pages/signup_page.dart';
 import 'package:first_app/Repositories/login_repository.dart';
 import 'package:flutter/material.dart';
 class LoginPage extends StatefulWidget{
@@ -147,8 +148,8 @@ class _LoginPageState extends State<LoginPage>{
 
               // Botón Sign in with Google
               ElevatedButton(
-                onPressed: () {
-
+                onPressed: () async {
+                  await _viewModel.loginWithGoogle(context);
                   // Aquí irá la autenticación con Google
                 },
                 style: ElevatedButton.styleFrom(
@@ -175,6 +176,11 @@ class _LoginPageState extends State<LoginPage>{
                   Text("Never experienced FreshLink?", style: TextStyle(fontFamily: 'MontserratAlternates')),
                   TextButton(
                     onPressed: () {
+                      if (!context.mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                      );
                       // Aquí irá la navegación a la pantalla de registro
                     },
                     child: Text("Sign Up", style: TextStyle(color: Color(0xFF38677A), fontWeight: FontWeight.bold, fontFamily: 'MontserratAlternates')),
