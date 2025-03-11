@@ -18,6 +18,7 @@ class LoginViewModel {
        final prefs =  await SharedPreferences.getInstance();
        await prefs.setBool('isLoggedIn', true);
 
+       if(!context.mounted) return;
        // Navigate to home page if login is successfull
        Navigator.pushReplacement(
          context,
@@ -34,5 +35,31 @@ class LoginViewModel {
      }
 
 
+   }
+
+
+   Future<void> loginWithGoogle( BuildContext context) async{
+     final success =  await _loginRepository.loginWithGoogle();
+     if(!context.mounted) return;
+     if(success){
+       final prefs =  await SharedPreferences.getInstance();
+       await prefs.setBool('isLoggedIn', true);
+
+       if(!context.mounted) return;
+       // Navigate to home page if login is successfull
+       Navigator.pushReplacement(
+         context,
+         MaterialPageRoute(builder: (context) =>  HomePage()), // Replace HomePage with your target page
+       );
+
+     }
+     else{
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(
+           content: Text('Invalid Credentials'),
+           backgroundColor:  Color(0xFF38677A),
+         ),
+       );
+     }
    }
  }
