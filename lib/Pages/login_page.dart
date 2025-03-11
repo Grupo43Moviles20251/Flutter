@@ -52,9 +52,15 @@ class _LoginPageState extends State<LoginPage>{
                 key: _loginFormKey,
                 child: Column(
                   children: [
-                    TextField(
+                    TextFormField(
                       controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
+                      validator: (value){
+                        if(value == null || !value.contains("@")){
+                          return "Enter a valid email";
+                        }
+                        return null;
+                      },
                       decoration: const InputDecoration(
                         labelText: 'Email',
                         labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
@@ -67,9 +73,15 @@ class _LoginPageState extends State<LoginPage>{
                       ),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
+                    TextFormField(
                       controller: _passwordController,
                       obscureText: !_isObscure,
+                      validator: (value){
+                        if(value == null || value ==""){
+                          return "Enter a valid password";
+                        }
+                        return null;
+                      },
                       decoration: InputDecoration(
                         labelText: "Password",
                         labelStyle: TextStyle(fontFamily: 'MontserratAlternates'),
@@ -116,7 +128,7 @@ class _LoginPageState extends State<LoginPage>{
                      _loginFormKey.currentState?.save();
                       final _email = _emailController.text;
                       final _password = _passwordController.text;
-                      await _viewModel.login(_email, _password);
+                      await _viewModel.login(_email, _password, context);
                      }
                 },
                 style: ElevatedButton.styleFrom(
