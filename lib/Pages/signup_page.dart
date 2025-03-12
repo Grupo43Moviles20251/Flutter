@@ -121,7 +121,7 @@ class _SignUpPageState extends State<SignUpPage>{
                         obscureText: !_isObscure,
 
                         validator: (value){
-                          if(value == null || value =="" || value.length > 6){
+                          if(value == null || value =="" || value.length < 6){
                             return "Enter a valid password";
                           }
                           return null;

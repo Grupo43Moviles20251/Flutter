@@ -1,8 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:http/http.dart' as http;
-
-import '../Pages/login_page.dart';
 
 abstract class SignUpRepository{
 
@@ -16,7 +15,8 @@ class SignRepository implements SignUpRepository {
   Future<bool> signUp(String name, String email, String password, String address, String birthday, BuildContext context) async {
     try{
       var response = await http.post(
-        Uri.parse('http://192.168.20.48:8000/signup'),
+        // Poner IP computador personal aca
+        Uri.parse('http://157.253.47.96:8000/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': name,
@@ -27,18 +27,18 @@ class SignRepository implements SignUpRepository {
         }),
       );
 
-
       if (response.statusCode == 200){
-
-        Future.delayed(Duration(seconds: 2), () {
-          if(!context.mounted) return;
-          Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  LoginPage()));
-        });
-
         return true;
 
       }else{
-        print(response.body);
+        Fluttertoast.showToast(
+          msg: response.body,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+
+        );
         return false;
       }
 
