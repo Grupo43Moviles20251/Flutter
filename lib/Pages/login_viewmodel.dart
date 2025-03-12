@@ -10,9 +10,23 @@ class LoginViewModel {
    LoginViewModel(this._loginRepository);
 
    Future<void> login(String email, String password, BuildContext context) async {
+
+     showDialog(
+       context: context,
+       barrierDismissible: false,
+       builder: (BuildContext context) {
+         return Center(
+           child: CircularProgressIndicator(),
+          );
+         },
+     );
+
      final success = await _loginRepository.login(email, password);
 
+
+
      if(!context.mounted) return;
+     Navigator.of(context).pop();
 
      if (success) {
        final prefs =  await SharedPreferences.getInstance();
@@ -29,7 +43,7 @@ class LoginViewModel {
        ScaffoldMessenger.of(context).showSnackBar(
          const SnackBar(
              content: Text('Invalid Credentials'),
-           backgroundColor:  Color(0xFF38677A),
+            backgroundColor:  Colors.red,
          ),
        );
      }
