@@ -28,18 +28,16 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
+        // Poner URI computador personal aca
         Uri.parse('http://192.168.20.48:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },
       );
 
-      print(token);
-
       if (response.statusCode == 200){
         var userData = json.decode(response.body);
         await _saveUserData(userData);
-        print(userData);
         return true;
 
       }else{
@@ -79,6 +77,7 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
+        // Poner URI computador personal aca
         Uri.parse('http://192.168.20.48:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
