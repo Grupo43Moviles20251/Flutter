@@ -28,8 +28,8 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
-        // Poner URI computador personal aca
-        Uri.parse('http://192.168.20.48:8000/users/me'),
+        // Poner IP computador personal aca
+        Uri.parse('http://157.253.47.96:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -37,6 +37,7 @@ class AuthRepository implements LoginRepository {
 
       if (response.statusCode == 200){
         var userData = json.decode(response.body);
+
         await _saveUserData(userData);
         return true;
 
@@ -77,18 +78,17 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
-        // Poner URI computador personal aca
-        Uri.parse('http://192.168.20.48:8000/users/me'),
+        // Poner IP computador personal aca
+        Uri.parse('http://157.253.47.96:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },
       );
-      print(response);
+
 
       if (response.statusCode == 200){
         var userData = json.decode(response.body);
         await _saveUserData(userData);
-        print(userData);
         return true;
 
       }else{

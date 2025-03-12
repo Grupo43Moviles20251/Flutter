@@ -1,8 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:first_app/Pages/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget{
+  const HomePage({super.key});
+
   @override
   State<StatefulWidget> createState() {
     return _HomePagePageState();
@@ -25,8 +28,9 @@ class _HomePagePageState extends State<HomePage>{
                 const Text("Olis"),
                 ElevatedButton(
                     onPressed: () async {
+                      await FirebaseAuth.instance.signOut();
                       final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove("isLoggedIn");
+                      await prefs.remove("userData");
                       if (!context.mounted) return;
                       Navigator.pushReplacement(
                         context,
