@@ -1,5 +1,9 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class LoginRepository{
 
@@ -15,16 +19,44 @@ class AuthRepository implements LoginRepository {
   @override
   Future<bool> login(String email, String password) async {
     try {
-      await _auth.signInWithEmailAndPassword(
+
+      UserCredential userCredential =  await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
-      return true;
+
+      String? token = await userCredential.user!.getIdToken();
+
+      var response = await http.get(
+        Uri.parse('http://192.168.20.48:8000/users/me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print(token);
+
+      if (response.statusCode == 200){
+        var userData = json.decode(response.body);
+        await _saveUserData(userData);
+        print(userData);
+        return true;
+
+      }else{
+        return false;
+      }
     } on FirebaseAuthException catch (e) {
       print("Auth Error: ${e.code} - ${e.message}");
       return false;
     }
   }
+
+  // Guardar la información del usuario en SharedPreferences
+  Future<void> _saveUserData(Map<String, dynamic> userData) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userData', json.encode(userData));  // Guardar como JSON
+  }
+
 
   @override
   Future<bool> loginWithGoogle() async{
@@ -34,7 +66,6 @@ class AuthRepository implements LoginRepository {
         return false;
       }
 
-
       final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
 
@@ -43,8 +74,27 @@ class AuthRepository implements LoginRepository {
         idToken: googleAuth.idToken,
       );
 
-      await _auth.signInWithCredential(credential);
-      return true;
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      String? token = await userCredential.user!.getIdToken();
+
+      var response = await http.get(
+        Uri.parse('http://192.168.20.48:8000/users/me'),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+      print(response);
+
+      if (response.statusCode == 200){
+        var userData = json.decode(response.body);
+        await _saveUserData(userData);
+        print(userData);
+        return true;
+
+      }else{
+        return false;
+      }
     } catch(e){
       print("Google Sign-In Error: $e");
       return false;
