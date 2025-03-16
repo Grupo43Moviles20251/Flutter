@@ -128,9 +128,9 @@ class _LoginPageState extends State<LoginPage>{
                 onPressed: () async {
                    if(_loginFormKey.currentState?.validate()?? false){
                      _loginFormKey.currentState?.save();
-                      final _email = _emailController.text;
-                      final _password = _passwordController.text;
-                      await _viewModel.login(_email, _password, context);
+                      final email = _emailController.text;
+                      final password = _passwordController.text;
+                      await _viewModel.login(email, password, context);
                      }
                 },
                 style: ElevatedButton.styleFrom(
