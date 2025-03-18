@@ -2,7 +2,7 @@ import 'package:first_app/Repositories/signup_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import 'login_page.dart';
+import '../Pages/login_page.dart';
 
 
 

@@ -1,5 +1,5 @@
 import 'package:first_app/Pages/login_page.dart';
-import 'package:first_app/Pages/signup_viewmodel.dart';
+import 'package:first_app/ViewModels/signup_viewmodel.dart';
 import 'package:first_app/Repositories/signup_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
