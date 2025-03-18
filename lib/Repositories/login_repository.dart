@@ -29,7 +29,7 @@ class AuthRepository implements LoginRepository {
 
       var response = await http.get(
         // Poner IP computador personal aca
-        Uri.parse('http://157.253.47.96:8000/users/me'),
+        Uri.parse('http://192.168.15.13:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },
