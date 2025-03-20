@@ -6,7 +6,7 @@ import 'package:first_app/Widgets/custom_scaffold.dart';
 
 class HomePage extends StatelessWidget {
   final int selectedIndex ;
-  HomePage({this.selectedIndex = 1});
+  HomePage({this.selectedIndex = 0});
   
   @override
   Widget build(BuildContext context) {
@@ -15,15 +15,37 @@ class HomePage extends StatelessWidget {
       child: Consumer<HomeViewModel>(
         builder: (context, viewModel, child) {
           return CustomScaffold(
-            body: viewModel.isLoading
-                ? Center(child: CircularProgressIndicator())
-                : ListView.builder(
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Título antes de las tarjetas
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "Restaurants for you",  // Título antes de las tarjetas
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'MontserratAlternates',
+                      color: Color(0xFF2A9D8F),
+                    ),
+                  ),
+                ),
+
+                // Mostrar las tarjetas de los restaurantes
+                viewModel.isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : Expanded(
+                  child: ListView.builder(
                     itemCount: viewModel.restaurants.length,
                     itemBuilder: (context, index) {
                       Restaurant restaurant = viewModel.restaurants[index];
                       return _buildRestaurantCard(restaurant);
                     },
                   ),
+                ),
+              ],
+            ),
             selectedIndex: selectedIndex,  // Asegúrate de pasar este índice
           );
         },
@@ -57,7 +79,7 @@ class HomePage extends StatelessWidget {
                     Spacer(),
                     Text("\$${restaurant.products[0].originalPrice}", style: TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey)),
                     SizedBox(width: 5),
-                    Text("\$${restaurant.products[0].discountPrice}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF38677A))),
+                    Text("\$${restaurant.products[0].discountPrice}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF2A9D8F))),
                   ],
                 ),
               ],
