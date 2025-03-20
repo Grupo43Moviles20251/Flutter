@@ -66,6 +66,9 @@ flutter:
         - asset: assets/fonts/MontserratAlternates-Bold.ttf
   assets:
     - assets/logo.png
+    - assets/cafe.png
+    - assets/restaurant.png
+    - assets/market.png
 
 
   # The following line ensures that the Material Icons font is
