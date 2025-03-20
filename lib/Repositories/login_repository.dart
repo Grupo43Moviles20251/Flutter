@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -62,6 +63,7 @@ class AuthRepository implements LoginRepository {
   Future<bool> loginWithGoogle() async{
     try{
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
       if (googleUser == null) {
         return false;
       }
@@ -93,10 +95,37 @@ class AuthRepository implements LoginRepository {
         return true;
 
       }else{
-        return false;
+
+        var userData = json.encode({
+          'name': googleUser.displayName,
+          'email': googleUser.email,
+          'password': '',
+          'address': '',
+          'birthday': '',
+        });
+
+        var createUserResponse = await http.post(
+          Uri.parse('http://192.168.0.134:8000/signup'),
+          headers: {'Content-Type': 'application/json'},
+          body: userData,
+        );
+
+        if (createUserResponse.statusCode == 200) {
+          await _saveUserData(json.decode(createUserResponse.body));
+          return true;
+
+        } else {
+          print("Error creating user: ${createUserResponse.body}");
+          return false;
+        }
+
       }
     } catch(e){
-      print("Google Sign-In Error: $e");
+      print("Error durante el inicio de sesión con Google: ${e.toString()}");
+      if (e is PlatformException) {
+        print("Código de error: ${e.code}");
+        print("Mensaje de error: ${e.message}");
+      }
       return false;
 
     }
