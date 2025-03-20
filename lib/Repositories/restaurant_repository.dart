@@ -3,7 +3,7 @@ import 'package:first_app/Models/restaurant_model.dart';
 import 'package:http/http.dart' as http;
 
 class RestaurantRepository {
-  final String apiUrl = "http://192.168.0.134:8000/restaurants"; // URL del backend
+  final String apiUrl = "http://172.20.4.177:8000/restaurants"; // URL del backend
 
   // Obtener todos los restaurantes
   Future<List<Restaurant>> fetchRestaurants() async {
