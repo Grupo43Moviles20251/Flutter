@@ -3,7 +3,7 @@ import 'package:first_app/Repositories/forgot_password_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
-import 'login_page.dart';
+import '../Pages/login_page.dart';
 
 class ForgotPasswordViewmodel {
   final ForgotPasswordRepository _forgotPasswordRepository;

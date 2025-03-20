@@ -2,6 +2,8 @@ import 'package:first_app/ViewModels/login_viewmodel.dart';
 import 'package:first_app/Pages/signup_page.dart';
 import 'package:first_app/Repositories/login_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:first_app/Pages/forgot_password_page.dart';
+
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
 
