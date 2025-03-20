@@ -6,7 +6,7 @@ import 'package:first_app/Widgets/custom_scaffold.dart';
 
 class HomePage extends StatelessWidget {
   final int selectedIndex ;
-  HomePage({this.selectedIndex = 1});
+  HomePage({this.selectedIndex = 0});
   
   @override
   Widget build(BuildContext context) {
