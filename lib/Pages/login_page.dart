@@ -117,6 +117,11 @@ class _LoginPageState extends State<LoginPage>{
                 child: TextButton(
                   onPressed: () async {
                     // Aquí irá la navegación a la pantalla de recuperación
+                    if (!context.mounted) return;
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ForgotPasswordPage()),
+                    );
 
                   },
                   child: Text("Forgot your password?", style: TextStyle(color: Color(0xFF38677A), fontFamily: 'MontserratAlternates')),
