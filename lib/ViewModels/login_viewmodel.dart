@@ -53,8 +53,19 @@ class LoginViewModel {
 
 
    Future<void> loginWithGoogle( BuildContext context) async{
+     showDialog(
+       context: context,
+       barrierDismissible: false,
+       builder: (BuildContext context) {
+         return Center(
+           child: CircularProgressIndicator(),
+         );
+       },
+     );
+
      final success =  await _loginRepository.loginWithGoogle();
      if(!context.mounted) return;
+     Navigator.of(context).pop();
      if(success){
        final prefs =  await SharedPreferences.getInstance();
        await prefs.setBool('isLoggedIn', true);

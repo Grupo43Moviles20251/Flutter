@@ -23,6 +23,7 @@ class UserPage extends StatelessWidget{
                           await FirebaseAuth.instance.signOut();
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.remove("userData");
+                          await prefs.remove("isLoggedIn");
                           if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,
