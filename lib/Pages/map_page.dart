@@ -45,7 +45,7 @@ class _MapPageState extends State<MapPage> {
       onMapCreated: (controller) => mapController = controller,
       initialCameraPosition: CameraPosition(
         target: viewModel.userLocation ?? const LatLng(4.710989, -74.072092),
-        zoom: 14,
+        zoom: 16,
       ),
       markers: viewModel.getMarkers(),
       myLocationEnabled: true,
