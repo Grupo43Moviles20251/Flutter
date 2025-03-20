@@ -1,4 +1,4 @@
-import 'package:first_app/Pages/forgot_password_viewmodel.dart';
+import 'package:first_app/ViewModels/forgot_password_viewmodel.dart';
 import 'package:first_app/Repositories/forgot_password_repository.dart';
 import 'package:flutter/material.dart';
 
