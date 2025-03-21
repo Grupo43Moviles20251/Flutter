@@ -36,7 +36,10 @@ class LoginViewModel {
        // Navigate to home page if login is successfull
        Navigator.pushReplacement(
          context,
-         MaterialPageRoute(builder: (context) =>  HomePage()), // Replace HomePage with your target page
+         MaterialPageRoute(
+             builder: (context) =>  HomePage(),
+             settings: RouteSettings(name: "HomePage")
+         ),
        );
      } else {
        // Show an error message or handle the failure
@@ -74,7 +77,10 @@ class LoginViewModel {
        // Navigate to home page if login is successfull
        Navigator.pushReplacement(
          context,
-         MaterialPageRoute(builder: (context) =>  HomePage()), // Replace HomePage with your target page
+         MaterialPageRoute(
+             builder: (context) =>  HomePage(),
+             settings: RouteSettings(name: "FavoritesPage")
+         ), // Replace HomePage with your target page
        );
 
      }

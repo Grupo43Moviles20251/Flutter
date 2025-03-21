@@ -31,7 +31,11 @@ class SignUpViewmodel {
 
       Future.delayed(Duration(seconds: 2), () {
         if(!context.mounted) return;
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  LoginPage()));
+        Navigator.pushReplacement(context, MaterialPageRoute(
+            builder: (context) =>  LoginPage(),
+            settings: RouteSettings(name: "LoginPage")
+        )
+        );
       });
 
       Fluttertoast.showToast(
