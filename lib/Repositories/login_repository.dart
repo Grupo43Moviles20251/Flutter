@@ -82,7 +82,7 @@ class AuthRepository implements LoginRepository {
 
       var response = await http.get(
         // Poner IP computador personal aca
-        Uri.parse('http://172.20.4.177:8000/users/me'),
+        Uri.parse('http://34.60.49.32:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
         },
@@ -105,7 +105,7 @@ class AuthRepository implements LoginRepository {
         });
 
         var createUserResponse = await http.post(
-          Uri.parse('http://172.20.4.177:8000/signup'),
+          Uri.parse('http://34.60.49.32:8000/signup'),
           headers: {'Content-Type': 'application/json'},
           body: userData,
         );
