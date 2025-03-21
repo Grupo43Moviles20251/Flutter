@@ -2,6 +2,7 @@ import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../Models/restaurant_model.dart';
 import '../ViewModels/map_viewmodel.dart';
@@ -64,6 +65,15 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
+  Future<void> _navigateToRestaurant(double lat, double lng) async {
+    final Uri url = Uri.parse( 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      throw 'No se pudo abrir Google Maps: $url';
+    }
+  }
+
 
   Widget _buildRestaurantInfo(BuildContext context, Restaurant restaurant) {
     // Calcular el precio promedio de los productos
@@ -80,6 +90,14 @@ class _MapPageState extends State<MapPage> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,7 +173,28 @@ class _MapPageState extends State<MapPage> {
               ],
             ),
             const SizedBox(height: 16),
-            // Botón para ver detalles
+
+            // Botón para obtener direcciones
+            ElevatedButton(
+              onPressed: () {
+                _navigateToRestaurant(restaurant.latitude, restaurant.longitude);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFF38677A),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                "Cómo llegar",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
           ],
         ),
       ),
