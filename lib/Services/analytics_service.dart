@@ -2,7 +2,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 class AnalyticsService {
-  final String apiUrl = "http://172.20.4.177:8000/analyticspages"; // URL de tu API
+  final String apiUrl = "http://34.56.108.17:8000/analyticspages"; // URL de tu API
 
   Future<void> trackScreenTime(String screenName, int durationInSeconds) async {
     final Map<String, dynamic> data = {

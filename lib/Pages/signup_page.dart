@@ -24,7 +24,7 @@ class _SignUpPageState extends State<SignUpPage>{
   bool _isObscure = false;
   DateTime? _selectedDate;
 
-  // Función para abrir el selector de fecha
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
