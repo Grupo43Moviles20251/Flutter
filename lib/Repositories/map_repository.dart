@@ -13,7 +13,7 @@ abstract class MapRepository {
 class mapRepository implements MapRepository {
   @override
   Future<List<Restaurant>> fetchRestaurants() async {
-    final response = await http.get(Uri.parse('http://172.20.4.177:8000/restaurants'));
+    final response = await http.get(Uri.parse('http://192.168.0.134:8000/restaurants'));
 
     if (response.statusCode == 200) {
       List<dynamic> data = json.decode(response.body);
