@@ -25,7 +25,10 @@ class CustomScaffold extends StatelessWidget {
             icon: Icon(Icons.account_circle, color: Colors.black, size: 30),
             onPressed: () {
               // Navegar a la página de usuario
-              Navigator.push(context, MaterialPageRoute(builder: (context) => UserPage()));
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (context) => UserPage(),
+                settings: RouteSettings(name: "UserPage"),
+              ));
             },
           ),
         ],
@@ -40,22 +43,33 @@ class CustomScaffold extends StatelessWidget {
           if (index == 0) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => HomePage(selectedIndex: 0)),
+              MaterialPageRoute(
+                  builder: (context) => HomePage(selectedIndex: 0),
+                  settings: RouteSettings(name: "HomePage")
+              ),
+
             );
           } else if (index == 1) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => FavoritesPage(selectedIndex: 1)),
+              MaterialPageRoute(
+                  builder: (context) => FavoritesPage(selectedIndex: 1),
+                  settings: RouteSettings(name: "FavoritesPage")
+              ),
             );
           } else if (index == 2) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => SearchPage(selectedIndex: 2)),
+              MaterialPageRoute(
+                  builder: (context) => SearchPage(selectedIndex: 2),
+                  settings: RouteSettings(name: "SearchPage")),
             );
           } else if (index == 3) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => MapPage(selectedIndex: 3)),
+              MaterialPageRoute(
+                  builder: (context) => MapPage(selectedIndex: 3),
+                  settings: RouteSettings(name: "MapPage")),
             );
           }
         },

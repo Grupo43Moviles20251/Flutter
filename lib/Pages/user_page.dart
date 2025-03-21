@@ -13,7 +13,6 @@ class UserPage extends StatelessWidget{
         child:  PopScope(
           canPop: false,
           child: Scaffold(
-            appBar: AppBar(title: const Text('Home')),
             body: Center(
                 child: Column(
                   children: [
@@ -27,7 +26,11 @@ class UserPage extends StatelessWidget{
                           if (!context.mounted) return;
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => LoginPage()),
+                            MaterialPageRoute(
+                                builder: (context) => LoginPage(),
+                              settings: RouteSettings(name: "LoginPage"),
+
+                            ),
                           );
 
                         },

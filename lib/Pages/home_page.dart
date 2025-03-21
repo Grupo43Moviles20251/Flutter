@@ -4,7 +4,8 @@ import 'package:first_app/Models/restaurant_model.dart';
 import 'package:provider/provider.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatelessWidget with WidgetsBindingObserver {
   final int selectedIndex ;
   HomePage({this.selectedIndex = 0});
 

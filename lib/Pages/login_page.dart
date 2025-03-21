@@ -4,6 +4,7 @@ import 'package:first_app/Repositories/login_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/Pages/forgot_password_page.dart';
 
+
 class LoginPage extends StatefulWidget{
   const LoginPage({super.key});
 
@@ -122,7 +123,10 @@ class _LoginPageState extends State<LoginPage>{
                     if (!context.mounted) return;
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ForgotPasswordPage()),
+                      MaterialPageRoute(
+                          builder: (context) => ForgotPasswordPage(),
+                          settings: RouteSettings(name: "ForgetPasswordPage"),
+                      ),
                     );
 
                   },
@@ -187,7 +191,9 @@ class _LoginPageState extends State<LoginPage>{
                       if (!context.mounted) return;
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                        MaterialPageRoute(
+                            builder: (context) => SignUpPage(),
+                            settings: RouteSettings(name: "SignUpPage"),),
                       );
                     },
                     child: Text("Sign Up", style: TextStyle(color: Color(0xFF38677A), fontWeight: FontWeight.bold, fontFamily: 'MontserratAlternates')),
