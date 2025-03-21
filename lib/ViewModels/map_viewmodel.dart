@@ -18,6 +18,10 @@ class MapViewModel with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
+  Restaurant? _selectedRestaurant;
+
+  Restaurant? get selectedRestaurant => _selectedRestaurant;
+
   Future<void> initialize() async {
     await _getUserLocation();
     await _fetchRestaurants();
@@ -47,6 +51,16 @@ class MapViewModel with ChangeNotifier {
     notifyListeners();
   }
 
+  void selectRestaurant(Restaurant restaurant) {
+    _selectedRestaurant = restaurant;
+    notifyListeners(); // Notifica a los listeners que el estado ha cambiado
+  }
+
+  void clearSelection() {
+    _selectedRestaurant = null;
+    notifyListeners(); // Notifica a los listeners que el estado ha cambiado
+  }
+
   Future<void> _fetchRestaurants() async {
     try {
       _restaurants = await _repository.fetchRestaurants();
@@ -66,7 +80,7 @@ class MapViewModel with ChangeNotifier {
         Marker(
           markerId: const MarkerId('user'),
           position: _userLocation!,
-          infoWindow: const InfoWindow(title: 'Your Location'),
+          infoWindow: const InfoWindow(title: 'Tu ubicación'),
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
@@ -81,6 +95,9 @@ class MapViewModel with ChangeNotifier {
             title: restaurant.name,
             snippet: restaurant.address,
           ),
+          onTap: () {
+            selectRestaurant(restaurant); // Selecciona el restaurante al tocar el marcador
+          },
         ),
       );
     }

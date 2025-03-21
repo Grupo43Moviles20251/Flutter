@@ -17,7 +17,7 @@ class SignRepository implements SignUpRepository {
       var response = await http.post(
         // Poner IP computador personal aca
 
-        Uri.parse('http://172.20.4.177:8000/signup'),
+        Uri.parse('http://192.168.0.134:8000/signup'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'name': name,
