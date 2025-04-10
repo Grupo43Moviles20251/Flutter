@@ -29,8 +29,7 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
-        // Poner IP computador personal aca
-        Uri.parse('http://192.168.0.134:8000/users/me'),
+        Uri.parse('http://34.60.49.32:8000/users/me'),
 
         headers: {
           'Authorization': 'Bearer $token',
@@ -52,7 +51,7 @@ class AuthRepository implements LoginRepository {
     }
   }
 
-  // Guardar la información del usuario en SharedPreferences
+
   Future<void> _saveUserData(Map<String, dynamic> userData) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString('userData', json.encode(userData));  // Guardar como JSON
@@ -81,7 +80,6 @@ class AuthRepository implements LoginRepository {
       String? token = await userCredential.user!.getIdToken();
 
       var response = await http.get(
-        // Poner IP computador personal aca
         Uri.parse('http://34.60.49.32:8000/users/me'),
         headers: {
           'Authorization': 'Bearer $token',
