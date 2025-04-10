@@ -27,7 +27,7 @@ class SignUpViewmodel {
 
     if(!context.mounted) return;
     Navigator.of(context).pop();
-    if(success){
+    if(success == "Success"){
 
       Future.delayed(Duration(seconds: 2), () {
         if(!context.mounted) return;
@@ -46,8 +46,16 @@ class SignUpViewmodel {
         textColor: Colors.white,
 
       );
-    }
+    } else  {
+      Fluttertoast.showToast(
+        msg: success,
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
 
+      );
+    }
   }
 
 

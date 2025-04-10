@@ -1,4 +1,4 @@
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:first_app/ServiceAdapters/firebase_service_adapter.dart';
 import 'package:flutter/material.dart';
 
 abstract class ForgotPasswordRepository{
@@ -8,20 +8,10 @@ abstract class ForgotPasswordRepository{
 
 
 class forgotPassRepository implements ForgotPasswordRepository {
-
+  final FirebaseServiceAdapter firebaseServiceAdapter =  FirebaseServiceAdapterImpl();
 
   @override
   Future<bool> forgotPassword(String email, BuildContext context) async {
-    try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-      return true;
-    } on FirebaseAuthException catch (e) {
-      print(e);
-
-      return false;
-    }
-
-
-
+    return  firebaseServiceAdapter.forgotPassword(email);
 }
 }

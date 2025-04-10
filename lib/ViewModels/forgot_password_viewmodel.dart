@@ -27,7 +27,6 @@ class ForgotPasswordViewmodel {
     if(!context.mounted) return;
     Navigator.of(context).pop();
     if(success){
-
       Future.delayed(Duration(seconds: 2), () {
         if(!context.mounted) return;
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) =>  LoginPage()));

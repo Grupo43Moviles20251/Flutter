@@ -21,19 +21,18 @@ class LoginViewModel {
          },
      );
 
-     final success = await _loginRepository.login(email, password);
+     final result = await _loginRepository.login(email, password);
 
 
 
      if(!context.mounted) return;
      Navigator.of(context).pop();
 
-     if (success) {
+     if (result == "Success") {
        final prefs =  await SharedPreferences.getInstance();
        await prefs.setBool('isLoggedIn', true);
 
        if(!context.mounted) return;
-       // Navigate to home page if login is successfull
        Navigator.pushReplacement(
          context,
          MaterialPageRoute(
@@ -42,10 +41,9 @@ class LoginViewModel {
          ),
        );
      } else {
-       // Show an error message or handle the failure
        ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(
-             content: Text('Invalid Credentials'),
+         SnackBar(
+             content: Text(result ?? 'Invalid Credentials'),
             backgroundColor:  Colors.red,
          ),
        );
@@ -66,10 +64,11 @@ class LoginViewModel {
        },
      );
 
-     final success =  await _loginRepository.loginWithGoogle();
+     final result =  await _loginRepository.loginWithGoogle();
      if(!context.mounted) return;
      Navigator.of(context).pop();
-     if(success){
+
+     if(result ==  "Success"){
        final prefs =  await SharedPreferences.getInstance();
        await prefs.setBool('isLoggedIn', true);
 
@@ -86,9 +85,9 @@ class LoginViewModel {
      }
      else{
        ScaffoldMessenger.of(context).showSnackBar(
-         const SnackBar(
-           content: Text('Invalid Credentials'),
-           backgroundColor:  Color(0xFF38677A),
+         SnackBar(
+           content: Text(result ?? 'Invalid Credentials'),
+           backgroundColor:  const Color(0xFF38677A),
          ),
        );
      }
