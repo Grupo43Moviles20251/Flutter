@@ -34,39 +34,65 @@ class HomePage extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // Loader o lista
-                if (viewModel.isLoading)
-                  Expanded(child: Center(child: CircularProgressIndicator()))
-                else
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: viewModel.restaurants.length,
-                      itemBuilder: (context, index) {
-                        final r = viewModel.restaurants[index];
-                        return RestaurantCard(
-                          restaurant: r,
-                          isFavoritePage: false,
-                          isFavorite: viewModel.isFavorite(r),
-                          onFavoriteToggle: () => viewModel.toggleFavorite(r),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => RestaurantDetailPage(restaurant: r),
-                                settings: RouteSettings(name: "RestaurantDetail"),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
+                _buildContent(viewModel)
               ],
             ),
           );
         },
       ),
     );
+  }
+
+
+  Widget _buildContent(HomeViewModel viewModel){
+    // Loader o lista
+    if (viewModel.isLoading) {
+      return Expanded(child: Center(child: CircularProgressIndicator()));
+    }
+      if(viewModel.restaurants.isEmpty){
+      return Expanded(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey),
+              SizedBox(height: 16),
+              Text(
+                viewModel.isOffline
+                    ? "No cached restaurants available. Please connect to the internet."
+                    : "No restaurants found.",
+                style: TextStyle(fontSize: 16),
+                textAlign: TextAlign.center,
+              ),
+
+            ],
+          ),
+        ),
+      );
+
+    }
+     return Expanded(
+        child: ListView.builder(
+          itemCount: viewModel.restaurants.length,
+          itemBuilder: (context, index) {
+            final r = viewModel.restaurants[index];
+            return RestaurantCard(
+              restaurant: r,
+              isFavoritePage: false,
+              isFavorite: viewModel.isFavorite(r),
+              onFavoriteToggle: () => viewModel.toggleFavorite(r),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RestaurantDetailPage(restaurant: r),
+                    settings: RouteSettings(name: "RestaurantDetail"),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      );
   }
 }

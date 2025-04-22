@@ -1,3 +1,4 @@
+import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/ViewModels/login_viewmodel.dart';
 import 'package:first_app/Pages/signup_page.dart';
 import 'package:first_app/Repositories/login_repository.dart';
@@ -21,7 +22,7 @@ class _LoginPageState extends State<LoginPage>{
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  final LoginViewModel _viewModel = LoginViewModel(AuthRepository());
+  final LoginViewModel _viewModel = LoginViewModel(AuthRepository(), ConnectivityService());
   bool _isObscure = false;
 
 

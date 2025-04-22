@@ -27,6 +27,7 @@ class Product {
   }
 }
 
+
 class Restaurant {
   final String name;
   final String imageUrl;
