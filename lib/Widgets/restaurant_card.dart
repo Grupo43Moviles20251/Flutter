@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 
+import 'package:cached_network_image/cached_network_image.dart'; 
+
 class RestaurantCard extends StatelessWidget {
   final Restaurant restaurant;
-  final bool isFavoritePage;      // true si estamos en FavoritesPage
-  final bool isFavorite;          // si este restaurant está marcado ahora
+  final bool isFavoritePage; // true si estamos en FavoritesPage
+  final bool isFavorite;     // Si este restaurant está marcado ahora
   final VoidCallback onFavoriteToggle;
   final VoidCallback? onTap;
 
@@ -20,7 +22,7 @@ class RestaurantCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap, // lleva al detalle, o null
+      onTap: onTap, // Lleva al detalle, o null
       child: Card(
         color: isFavoritePage ? Color(0xFF2A9D8F) : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -28,18 +30,20 @@ class RestaurantCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1) la imagen igual que antes
+            // 1) Imagen con CachedNetworkImage
             ClipRRect(
               borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-              child: Image.network(
-                restaurant.imageUrl,
+              child: CachedNetworkImage(
+                imageUrl: restaurant.imageUrl,  // URL de la imagen
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                placeholder: (context, url) => Center(child: CircularProgressIndicator()), // Imagen mientras se carga
+                errorWidget: (context, url, error) => Icon(Icons.error), // Imagen si hay error
               ),
             ),
 
-            // 2) ahora un único Padding con un Row para título + corazón
+            // 2) Título + Corazón
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
               child: Row(
@@ -74,7 +78,7 @@ class RestaurantCard extends StatelessWidget {
               ),
             ),
 
-            // 3) resto del cuerpo: subtítulo, rating, precios…
+            // 3) Resto del cuerpo: Subtítulo, rating, precios
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
@@ -126,6 +130,6 @@ class RestaurantCard extends StatelessWidget {
           ],
         ),
       ),
-        );
-      }
+    );
+  }
 }
