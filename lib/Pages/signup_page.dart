@@ -4,6 +4,8 @@ import 'package:first_app/Repositories/signup_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../Services/connection_helper.dart';
+
 class SignUpPage extends StatefulWidget{
   const SignUpPage({super.key});
   @override
@@ -42,7 +44,7 @@ class _SignUpPageState extends State<SignUpPage>{
   }
 
 
-  final SignUpViewmodel _viewModel = SignUpViewmodel(SignRepository());
+  final SignUpViewmodel _viewModel = SignUpViewmodel(SignRepository(), ConnectivityService());
 
   @override
   Widget build(BuildContext context) {
