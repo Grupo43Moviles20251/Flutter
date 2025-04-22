@@ -1,5 +1,5 @@
 import 'package:first_app/Models/restaurant_model.dart';
-import 'package:first_app/Repositories/restaurant_repository.dart';
+import 'package:first_app/Pages/restaurant_detail_page.dart';
 import 'package:first_app/ViewModels/search_viewmodel.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
@@ -74,7 +74,18 @@ class SearchPage extends StatelessWidget {
                     itemCount: viewModel.restaurants.length,
                     itemBuilder: (context, index) {
                       Restaurant restaurant = viewModel.restaurants[index];
-                      return _buildRestaurantCard(restaurant);
+                      return GestureDetector(
+                          onTap: (){
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => RestaurantDetailPage(restaurant: restaurant),
+                                  settings: RouteSettings(name: "RestaurantDetail")
+                              ),
+                            );
+                          },
+                          child: _buildRestaurantCard(restaurant)
+                      );
                     },
                   ),
                 ),
