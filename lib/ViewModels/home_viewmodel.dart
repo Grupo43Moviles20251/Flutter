@@ -6,14 +6,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
+  final ConnectivityService connectivityService =  ConnectivityService();
+  static const _prefsKey = 'favorite_names';
+  Set<String> _favorites = {};
   List<Restaurant> restaurants = [];
   bool isLoading = true;
   bool isOffline = false;
-  final ConnectivityService connectivityService =  ConnectivityService();
 
-  // ——— FAVORITES ———
-  static const _prefsKey = 'favorite_names';
-  Set<String> _favorites = {};
+  bool isFavorite(Restaurant r) => _favorites.contains(r.name);
+
 
   HomeViewModel() {
     _loadFavorites();
@@ -26,7 +27,7 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isFavorite(Restaurant r) => _favorites.contains(r.name);
+
 
   Future<void> toggleFavorite(Restaurant r) async {
     final prefs = await SharedPreferences.getInstance();
@@ -38,7 +39,6 @@ class HomeViewModel extends ChangeNotifier {
     await prefs.setStringList(_prefsKey, _favorites.toList());
     notifyListeners();
   }
-  // ——— /FAVORITES ———
 
   Future<void> loadRestaurants() async {
     isLoading = true;
@@ -47,9 +47,7 @@ class HomeViewModel extends ChangeNotifier {
     if (isConnected){
       isOffline = true;
       try {
-        print("Cargando restaurantes...");
         restaurants = await _restaurantRepository.fetchRestaurants();
-        print("Restaurantes cargados: ${restaurants.length}");
       } catch (e) {
         print("Error al cargar restaurantes: $e");
       }
@@ -59,8 +57,6 @@ class HomeViewModel extends ChangeNotifier {
       isOffline = false;
       restaurants = [];
     }
-
-
     isLoading = false;
     notifyListeners();
   }
