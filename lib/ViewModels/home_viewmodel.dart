@@ -1,5 +1,6 @@
 import 'package:first_app/Repositories/restaurant_repository.dart';
 import 'package:first_app/Models/restaurant_model.dart';
+import 'package:first_app/Services/connection_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -7,6 +8,8 @@ class HomeViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
   List<Restaurant> restaurants = [];
   bool isLoading = true;
+  bool isOffline = false;
+  final ConnectivityService connectivityService =  ConnectivityService();
 
   // ——— FAVORITES ———
   static const _prefsKey = 'favorite_names';
@@ -40,14 +43,23 @@ class HomeViewModel extends ChangeNotifier {
   Future<void> loadRestaurants() async {
     isLoading = true;
     notifyListeners();
+    final isConnected = await connectivityService.isConnected();
+    if (isConnected){
+      isOffline = true;
+      try {
+        print("Cargando restaurantes...");
+        restaurants = await _restaurantRepository.fetchRestaurants();
+        print("Restaurantes cargados: ${restaurants.length}");
+      } catch (e) {
+        print("Error al cargar restaurantes: $e");
+      }
 
-    try {
-      print("Cargando restaurantes...");
-      restaurants = await _restaurantRepository.fetchRestaurants();
-      print("Restaurantes cargados: ${restaurants.length}");
-    } catch (e) {
-      print("Error al cargar restaurantes: $e");
     }
+    else{
+      isOffline = false;
+      restaurants = [];
+    }
+
 
     isLoading = false;
     notifyListeners();
