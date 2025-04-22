@@ -25,15 +25,25 @@ class Product {
       originalPrice: json['originalPrice'],
     );
   }
-}
 
+  Map<String, dynamic> toJson() {
+    return {
+      'productId': productId,
+      'productName': productName,
+      'amount': amount,
+      'available': available,
+      'discountPrice': discountPrice,
+      'originalPrice': originalPrice,
+    };
+  }
+}
 
 class Restaurant {
   final String name;
   final String imageUrl;
   final String description;
-  final double latitude;  // Latitud
-  final double longitude; // Longitud
+  final double latitude;
+  final double longitude;
   final String address;
   final List<Product> products;
   final double rating;
@@ -52,19 +62,33 @@ class Restaurant {
   });
 
   factory Restaurant.fromJson(Map<String, dynamic> json) {
-    var productList = json['products'] as List? ?? [];  // Si 'products' es null, usamos una lista vacía
+    var productList = json['products'] as List? ?? [];
     List<Product> productObjects = productList.map((e) => Product.fromJson(e)).toList();
 
     return Restaurant(
       name: json['name'],
       imageUrl: json['imageUrl'],
       description: json['description'],
-      latitude: json['latitude'],  // Ahora usamos 'latitude'
-      longitude: json['longitude'],  // Y 'longitude'
+      latitude: json['latitude'],
+      longitude: json['longitude'],
       address: json['address'],
       products: productObjects,
       rating: json['rating'],
       type: json['type'],
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'imageUrl': imageUrl,
+      'description': description,
+      'latitude': latitude,
+      'longitude': longitude,
+      'address': address,
+      'products': products.map((product) => product.toJson()).toList(),
+      'rating': rating,
+      'type': type,
+    };
   }
 }
