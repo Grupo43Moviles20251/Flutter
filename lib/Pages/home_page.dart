@@ -1,13 +1,13 @@
 import 'package:first_app/Pages/restaurant_detail_page.dart';
-import 'package:flutter/material.dart';
 import 'package:first_app/ViewModels/home_viewmodel.dart';
-import 'package:first_app/Models/restaurant_model.dart';
-import 'package:provider/provider.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
+import 'package:first_app/Widgets/restaurant_card.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 
-class HomePage extends StatelessWidget with WidgetsBindingObserver {
-  final int selectedIndex ;
+class HomePage extends StatelessWidget {
+  final int selectedIndex;
   HomePage({this.selectedIndex = 0});
 
   @override
@@ -15,16 +15,17 @@ class HomePage extends StatelessWidget with WidgetsBindingObserver {
     return ChangeNotifierProvider(
       create: (_) => HomeViewModel()..loadRestaurants(),
       child: Consumer<HomeViewModel>(
-        builder: (context, viewModel, child) {
+        builder: (context, viewModel, _) {
           return CustomScaffold(
+            selectedIndex: selectedIndex,
             body: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Título antes de las tarjetas
+                // Título
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
-                    "Restaurants for you",  // Título antes de las tarjetas
+                    "Restaurants for you",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -34,71 +35,37 @@ class HomePage extends StatelessWidget with WidgetsBindingObserver {
                   ),
                 ),
 
-                // Mostrar las tarjetas de los restaurantes
-                viewModel.isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : Expanded(
-                  child: ListView.builder(
-                    itemCount: viewModel.restaurants.length,
-                    itemBuilder: (context, index) {
-                      Restaurant restaurant = viewModel.restaurants[index];
-                      return GestureDetector(
-                        onTap: (){
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RestaurantDetailPage(restaurant: restaurant),
-                                settings: RouteSettings(name: "RestaurantDetail")
-                            ),
-                          );
-                        },
-                        child: _buildRestaurantCard(restaurant)
-                      );
-                    },
+                // Loader o lista
+                if (viewModel.isLoading)
+                  Expanded(child: Center(child: CircularProgressIndicator()))
+                else
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: viewModel.restaurants.length,
+                      itemBuilder: (context, index) {
+                        final r = viewModel.restaurants[index];
+                        return RestaurantCard(
+                          restaurant: r,
+                          isFavoritePage: false,
+                          isFavorite: viewModel.isFavorite(r),
+                          onFavoriteToggle: () => viewModel.toggleFavorite(r),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RestaurantDetailPage(restaurant: r),
+                                settings: RouteSettings(name: "RestaurantDetail"),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
               ],
             ),
-            selectedIndex: selectedIndex,  // Asegúrate de pasar este índice
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildRestaurantCard(Restaurant restaurant) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-            child: Image.network(restaurant.imageUrl, height: 150, width: double.infinity, fit: BoxFit.cover),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(restaurant.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                Text("Surprise bag", style: TextStyle(color: Colors.grey)),
-                SizedBox(height: 5),
-                Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.amber, size: 18),
-                    Text("${restaurant.rating}", style: TextStyle(fontSize: 14)),
-                    Spacer(),
-                    Text("\$${restaurant.products[0].originalPrice}", style: TextStyle(decoration: TextDecoration.lineThrough, color: Colors.grey)),
-                    SizedBox(width: 5),
-                    Text("\$${restaurant.products[0].discountPrice}", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF2A9D8F))),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
