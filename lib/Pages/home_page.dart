@@ -1,3 +1,4 @@
+import 'package:first_app/Pages/restaurant_detail_page.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/ViewModels/home_viewmodel.dart';
 import 'package:first_app/Models/restaurant_model.dart';
@@ -41,7 +42,18 @@ class HomePage extends StatelessWidget with WidgetsBindingObserver {
                     itemCount: viewModel.restaurants.length,
                     itemBuilder: (context, index) {
                       Restaurant restaurant = viewModel.restaurants[index];
-                      return _buildRestaurantCard(restaurant);
+                      return GestureDetector(
+                        onTap: (){
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RestaurantDetailPage(restaurant: restaurant),
+                                settings: RouteSettings(name: "RestaurantDetail")
+                            ),
+                          );
+                        },
+                        child: _buildRestaurantCard(restaurant)
+                      );
                     },
                   ),
                 ),

@@ -1,3 +1,4 @@
+import 'package:first_app/Pages/restaurant_detail_page.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -93,7 +94,7 @@ class _MapPageState extends State<MapPage> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black,
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
@@ -114,11 +115,21 @@ class _MapPageState extends State<MapPage> {
             ),
             const SizedBox(height: 12),
             // Nombre del restaurante
-            Text(
-              restaurant.name,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RestaurantDetailPage(restaurant: restaurant),
+                  ),
+                );
+              },
+              child: Text(
+                restaurant.name,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -160,11 +171,11 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Precio promedio
+
                 const Icon(Icons.attach_money, size: 16, color: Colors.green),
                 const SizedBox(width: 4),
                 Text(
-                  "Precio promedio: \$${averagePrice.toStringAsFixed(2)}",
+                  "Average Price: \$${averagePrice.toStringAsFixed(2)}",
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -174,27 +185,33 @@ class _MapPageState extends State<MapPage> {
             ),
             const SizedBox(height: 16),
 
-            // Botón para obtener direcciones
-            ElevatedButton(
-              onPressed: () {
-                _navigateToRestaurant(restaurant.latitude, restaurant.longitude);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFF38677A),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribuye el espacio uniformemente
+              children: [
+                // Botón para obtener direcciones
+                ElevatedButton(
+                  onPressed: () {
+                    _navigateToRestaurant(restaurant.latitude, restaurant.longitude);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF38677A),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    "Get Directions",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
-              child: const Text(
-                "Cómo llegar",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+
+              ],
+            )
           ],
         ),
       ),
