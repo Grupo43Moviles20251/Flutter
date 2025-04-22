@@ -60,7 +60,7 @@ class LoginViewModel {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result ?? 'Invalid Credentials'),
+            content: Text('Invalid Credentials'),
             backgroundColor: Colors.red,
           ),
         );
