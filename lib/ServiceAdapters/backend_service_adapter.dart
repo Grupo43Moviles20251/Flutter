@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:http/http.dart' as http;
 import '../Dtos/user_dto.dart';
@@ -117,6 +117,31 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       print("Error en searchRestaurants: $e");
       return [];
     }
+  }
+
+  @override
+  Future<List<String>> getFavoriteRestaurantIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String>? favoriteIds = prefs.getStringList('favorite_restaurants');
+    return favoriteIds ?? [];
+  }
+
+  @override
+  Future<void> addFavoriteRestaurant(String restaurantId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> favoriteIds = prefs.getStringList('favorite_restaurants') ?? [];
+    if (!favoriteIds.contains(restaurantId)) {
+      favoriteIds.add(restaurantId);
+      await prefs.setStringList('favorite_restaurants', favoriteIds);
+    }
+  }
+
+  @override
+  Future<void> removeFavoriteRestaurant(String restaurantId) async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> favoriteIds = prefs.getStringList('favorite_restaurants') ?? [];
+    favoriteIds.remove(restaurantId);
+    await prefs.setStringList('favorite_restaurants', favoriteIds);
   }
 
   @override
