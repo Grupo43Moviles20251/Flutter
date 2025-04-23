@@ -3,17 +3,22 @@ import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Services/connection_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert'; // For JSON serialization
 
 class HomeViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
+  final ConnectivityService connectivityService = ConnectivityService();
+  static const _prefsKey = 'favorite_names';
+  static const _cacheKey = 'restaurants_cache';
+  static const _cacheDurationKey = 'restaurants_cache_timestamp';
+  static const _cacheDuration = Duration(hours: 1); // Cache expires after 1 hour
+
+  Set<String> _favorites = {};
   List<Restaurant> restaurants = [];
   bool isLoading = true;
   bool isOffline = false;
-  final ConnectivityService connectivityService =  ConnectivityService();
 
-  // ——— FAVORITES ———
-  static const _prefsKey = 'favorite_names';
-  Set<String> _favorites = {};
+  bool isFavorite(Restaurant r) => _favorites.contains(r.name);
 
   HomeViewModel() {
     _loadFavorites();
@@ -26,8 +31,6 @@ class HomeViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool isFavorite(Restaurant r) => _favorites.contains(r.name);
-
   Future<void> toggleFavorite(Restaurant r) async {
     final prefs = await SharedPreferences.getInstance();
     if (_favorites.contains(r.name)) {
@@ -38,30 +41,56 @@ class HomeViewModel extends ChangeNotifier {
     await prefs.setStringList(_prefsKey, _favorites.toList());
     notifyListeners();
   }
-  // ——— /FAVORITES ———
 
   Future<void> loadRestaurants() async {
     isLoading = true;
     notifyListeners();
+
     final isConnected = await connectivityService.isConnected();
-    if (isConnected){
-      isOffline = true;
+    final prefs = await SharedPreferences.getInstance();
+
+    if (isConnected) {
+      isOffline = false;
       try {
-        print("Cargando restaurantes...");
+        // Fetch fresh data from network
         restaurants = await _restaurantRepository.fetchRestaurants();
-        print("Restaurantes cargados: ${restaurants.length}");
+
+        // Cache the new data
+        final cacheData = restaurants.map((r) => r.toJson()).toList();
+        await prefs.setString(_cacheKey, json.encode(cacheData));
+        await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
       } catch (e) {
         print("Error al cargar restaurantes: $e");
+        // If network fails, try to load from cache
+        await _loadFromCache(prefs);
       }
-
+    } else {
+      isOffline = true;
+      // Load from cache when offline
+      await _loadFromCache(prefs);
     }
-    else{
-      isOffline = false;
-      restaurants = [];
-    }
-
 
     isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> _loadFromCache(SharedPreferences prefs) async {
+    try {
+      final cachedData = prefs.getString(_cacheKey);
+      final cachedTimestamp = prefs.getInt(_cacheDurationKey) ?? 0;
+      final cacheAge = DateTime.now().difference(
+          DateTime.fromMillisecondsSinceEpoch(cachedTimestamp)
+      );
+
+      if (cachedData != null && cacheAge < _cacheDuration) {
+        final List<dynamic> jsonData = json.decode(cachedData);
+        restaurants = jsonData.map((json) => Restaurant.fromJson(json)).toList();
+      } else {
+        restaurants = [];
+      }
+    } catch (e) {
+      print("Error loading from cache: $e");
+      restaurants = [];
+    }
   }
 }

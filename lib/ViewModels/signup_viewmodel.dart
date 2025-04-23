@@ -15,13 +15,9 @@ class SignUpViewmodel {
 
   Future<void> signUp(String name, String email, String password, String address, String birthday,  BuildContext context) async {
     try {
-
       final isConnected = await _connectivityService.isConnected();
       if(!isConnected){
-
-
         if (context.mounted) {
-
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('No internet connection. Try again to signup when you\'re back online.'),

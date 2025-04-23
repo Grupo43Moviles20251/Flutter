@@ -12,13 +12,10 @@ class LoginViewModel {
 
    LoginViewModel(this._loginRepository, this._connectivityService);
 
-
    Future<void> login(String email, String password, BuildContext context) async {
     try {
       final isConnected = await _connectivityService.isConnected();
       if(!isConnected){
-
-
         if (context.mounted) {
 
           ScaffoldMessenger.of(context).showSnackBar(
@@ -80,9 +77,7 @@ class LoginViewModel {
 
 
    Future<void> loginWithGoogle( BuildContext context) async{
-
      try {
-
      final isConnected = await _connectivityService.isConnected();
      if(!isConnected){
 

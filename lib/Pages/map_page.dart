@@ -1,13 +1,14 @@
 import 'package:first_app/Pages/restaurant_detail_page.dart';
+import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:connectivity_plus/connectivity_plus.dart'; // Add this import
 
 import '../Models/restaurant_model.dart';
 import '../ViewModels/map_viewmodel.dart';
-
 
 class MapPage extends StatefulWidget {
   final int selectedIndex;
@@ -19,24 +20,79 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
+  bool _isOnline = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final connectivityResult = await ConnectivityService().isConnected();
+    setState(() {
+      _isOnline = connectivityResult ;
+    });
+
+    // Listen to connectivity changes
+    Connectivity().onConnectivityChanged.listen((result) {
+      setState(() {
+        _isOnline = result != ConnectivityResult.none;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => MapViewModel()..initialize(),
+      create: (_) =>
+      MapViewModel()
+        ..initialize(),
       child: Consumer<MapViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(
             body: Stack(
               children: [
-                _buildMap(context, viewModel),
-                if (viewModel.selectedRestaurant != null)
+                if (!_isOnline) _buildOfflineMessage(),
+                if (_isOnline) _buildMap(context, viewModel),
+                if (viewModel.selectedRestaurant != null && _isOnline)
                   _buildRestaurantInfo(context, viewModel.selectedRestaurant!),
               ],
             ),
             selectedIndex: widget.selectedIndex,
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildOfflineMessage() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.wifi_off, size: 60, color: Colors.grey),
+            const SizedBox(height: 20),
+            const Text(
+              'No Internet Connection',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'The map requires an internet connection to function properly.',
+              style: TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _checkConnectivity,
+              child: const Text('Retry Connection'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -59,15 +115,16 @@ class _MapPageState extends State<MapPage> {
       markers: viewModel.getMarkers(),
       myLocationEnabled: true,
       myLocationButtonEnabled: true,
-      onTap: (_) {
-
-        viewModel.clearSelection();
-      },
+      onTap: (_) => viewModel.clearSelection(),
     );
   }
 
+// ... [keep all your existing methods below unchanged]
+
+
   Future<void> _navigateToRestaurant(double lat, double lng) async {
-    final Uri url = Uri.parse( 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
+    final Uri url = Uri.parse(
+        'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving');
     if (await canLaunchUrl(url)) {
       await launchUrl(url);
     } else {
@@ -79,7 +136,8 @@ class _MapPageState extends State<MapPage> {
   Widget _buildRestaurantInfo(BuildContext context, Restaurant restaurant) {
     // Calcular el precio promedio de los productos
     double averagePrice = restaurant.products.isNotEmpty
-        ? restaurant.products.map((p) => p.discountPrice).reduce((a, b) => a + b) /
+        ? restaurant.products.map((p) => p.discountPrice).reduce((a, b) =>
+    a + b) /
         restaurant.products.length
         : 0;
 
@@ -120,7 +178,8 @@ class _MapPageState extends State<MapPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => RestaurantDetailPage(restaurant: restaurant),
+                    builder: (context) =>
+                        RestaurantDetailPage(restaurant: restaurant),
                   ),
                 );
               },
@@ -186,16 +245,19 @@ class _MapPageState extends State<MapPage> {
             const SizedBox(height: 16),
 
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribuye el espacio uniformemente
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              // Distribuye el espacio uniformemente
               children: [
                 // Botón para obtener direcciones
                 ElevatedButton(
                   onPressed: () {
-                    _navigateToRestaurant(restaurant.latitude, restaurant.longitude);
+                    _navigateToRestaurant(
+                        restaurant.latitude, restaurant.longitude);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF38677A),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

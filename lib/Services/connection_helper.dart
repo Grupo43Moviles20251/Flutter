@@ -6,10 +6,7 @@ class ConnectivityService {
 
   Future<bool> isConnected() async {
     final result = await _connectivity.checkConnectivity();
-
     if (result == ConnectivityResult.none) return false;
-
-
     try {
       final response = await http.get(Uri.parse('https://www.google.com')).timeout(
         const Duration(seconds: 3),
