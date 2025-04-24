@@ -4,6 +4,7 @@ class UserDTO {
   final String email;
   final String? address;
   final String? birthday;
+  final String? photoUrl;
 
   UserDTO({
     this.id,
@@ -11,6 +12,8 @@ class UserDTO {
     required this.email,
     this.address,
     this.birthday,
+    this.photoUrl
+
   });
 
   factory UserDTO.fromJson(Map<String, dynamic> json) {
@@ -20,6 +23,7 @@ class UserDTO {
       email: json['email']?.toString() ?? '',
       address: json['address']?.toString(),
       birthday: json['birthday']?.toString(),
+      photoUrl: json['photoUrl']?.toString()
     );
   }
 
@@ -29,5 +33,7 @@ class UserDTO {
     'email': email,
     if (address != null) 'address': address,
     if (birthday != null) 'birthday': birthday,
+    if (photoUrl != null) 'photoUrl': photoUrl,
+
   };
 }

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:first_app/Dtos/user_dto.dart';
+import 'edit_profile_page.dart';
 import 'login_page.dart';
 import 'dart:convert';
 
@@ -55,11 +56,16 @@ class _UserPageState extends State<UserPage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey[200],
-                  child: Icon(
+                  backgroundImage: userData?.photoUrl != null
+                      ? NetworkImage(userData!.photoUrl!)
+                      : null,
+                  child: userData?.photoUrl == null
+                      ? Icon(
                     Icons.person,
                     size: 60,
                     color: Colors.grey[600],
-                  ),
+                  )
+                      : null,
                 ),
                 SizedBox(height: 20),
 
@@ -98,24 +104,61 @@ class _UserPageState extends State<UserPage> {
                   ),
                 ),
                 SizedBox(height: 40),
+// En el build method de UserPage, añade este botón junto al de logout:
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Botón de Editar
+                    ElevatedButton(
+                      onPressed: () async {
+                        final updatedUser = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditProfilePage(userData: userData!),
+                          ),
+                        );
 
-                // Logout Button
-                ElevatedButton(
-                  onPressed: _logout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                        if (updatedUser != null) {
+                          setState(() {
+                            userData = updatedUser;
+                          });
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:  Color(0xFF2A9D8F),
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Edit Profile",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    "Sign Out",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
+
+                    // Botón de Logout (el que ya tenías)
+                    ElevatedButton(
+                      onPressed: _logout,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Sign Out",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
