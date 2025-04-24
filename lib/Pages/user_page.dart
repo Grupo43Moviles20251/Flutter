@@ -1,3 +1,5 @@
+import 'package:first_app/Repositories/user_repository.dart';
+import 'package:first_app/ViewModels/user_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -111,10 +113,14 @@ class _UserPageState extends State<UserPage> {
                     // Botón de Editar
                     ElevatedButton(
                       onPressed: () async {
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        String? userJson = prefs.getString('userData');
+                        userData = UserDTO.fromJson(json.decode(userJson!));
+
                         final updatedUser = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => EditProfilePage(userData: userData!),
+                            builder: (context) => EditProfilePage(userData: userData!, viewModel: UserViewModel(UserRepositoryImpl()),),
                           ),
                         );
 

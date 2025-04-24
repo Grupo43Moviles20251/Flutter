@@ -1,20 +1,22 @@
-import 'dart:convert';
+// edit_profile_page.dart
 import 'dart:io';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:first_app/Dtos/user_dto.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../ViewModels/user_viewmodel.dart';
 
 class EditProfilePage extends StatefulWidget {
   final UserDTO userData;
+  final UserViewModel viewModel;
 
-  const EditProfilePage({super.key, required this.userData});
+  const EditProfilePage({
+    super.key,
+    required this.userData,
+    required this.viewModel,
+  });
 
   @override
   _EditProfilePageState createState() => _EditProfilePageState();
@@ -60,86 +62,43 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  Future<String?> _uploadImage() async {
-    if (_imageFile == null) return null;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final fileName = path.basename(_imageFile!.path);
-      final destination = 'profile_images/${widget.userData.id}/$fileName';
-      final ref = FirebaseStorage.instance.ref(destination);
-      await ref.putFile(_imageFile!);
-      final downloadUrl = await ref.getDownloadURL();
-      return downloadUrl;
-    } catch (e) {
-      print('Error uploading image: $e');
-      return null;
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
   Future<void> _saveProfile() async {
     setState(() {
       _isLoading = true;
     });
 
+
     try {
-      // Subir imagen si hay una nueva
-      String? newImageUrl = await _uploadImage();
-      if (newImageUrl != null) {
-        _imageUrl = newImageUrl;
-      }
+      print(widget.userData.id);
 
-      // Obtener el usuario actual
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      // Actualizar email en Firebase Auth si cambió
-      if (_emailController.text != user.email) {
-        await user.verifyBeforeUpdateEmail(_emailController.text);
-      }
-
-      // Crear objeto con los datos actualizados
-      final updatedUser = UserDTO(
-        id: widget.userData.id,
+      final updatedUser = await widget.viewModel.updateProfile(
+        userId: widget.userData.id!,
         name: _nameController.text,
         email: _emailController.text,
         address: _addressController.text.isNotEmpty ? _addressController.text : null,
         birthday: _birthdayController.text.isNotEmpty ? _birthdayController.text : null,
-        photoUrl: _imageUrl,
+        profileImage: _imageFile,
       );
 
-      // Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .set(updatedUser.toJson(), SetOptions(merge: true));
+      if (!mounted) return;
 
-      // Actualizar en SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('userData', json.encode(updatedUser.toJson()));
-
-      // Mostrar mensaje de éxito
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Perfil actualizado correctamente')),
       );
 
-      // Regresar a la pantalla anterior
       Navigator.pop(context, updatedUser);
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error al actualizar el perfil: $e')),
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -148,6 +107,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return CustomScaffold(
       body: Scaffold(
         appBar: AppBar(
+          title: const Text('Editar Perfil'),
         ),
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
@@ -192,8 +152,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 child: ElevatedButton.icon(
                   onPressed: _isLoading ? null : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:  Color(0xFF2A9D8F), // Color de fondo
-                    foregroundColor: Colors.white, // Color del texto e icono
+                    backgroundColor: const Color(0xFF2A9D8F),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
