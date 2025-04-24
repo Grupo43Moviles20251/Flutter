@@ -177,7 +177,7 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
     try{
 
       var response = await http.post(
-        Uri.parse('http://192.168.20.48:8000/order'),
+        Uri.parse('$baseUrl/order'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'product_id': itemId,
