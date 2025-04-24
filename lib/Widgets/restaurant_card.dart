@@ -52,7 +52,7 @@ class RestaurantCard extends StatelessWidget {
                   // El título
                   Expanded(
                     child: Text(
-                      restaurant.name,
+                      restaurant.products[0].productName,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -85,7 +85,7 @@ class RestaurantCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Surprise bag",
+                    restaurant.name,
                     style: TextStyle(
                       color: isFavoritePage ? Colors.white70 : Colors.grey,
                     ),

@@ -25,7 +25,7 @@ class HomePage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Text(
-                    "Restaurants for you",
+                    "Products for you",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -59,11 +59,12 @@ class HomePage extends StatelessWidget {
               SizedBox(height: 16),
               Text(
                 viewModel.isOffline
-                    ? "No cached restaurants available. Please connect to the internet."
-                    : "No restaurants found.",
+                    ? "No products available. Please connect to the internet."
+                    : "No products found.",
                 style: TextStyle(fontSize: 16),
                 textAlign: TextAlign.center,
               ),
+
 
             ],
           ),

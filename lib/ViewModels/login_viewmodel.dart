@@ -117,8 +117,8 @@ class LoginViewModel {
          context,
          MaterialPageRoute(
              builder: (context) =>  HomePage(),
-             settings: RouteSettings(name: "FavoritesPage")
-         ), // Replace HomePage with your target page
+             settings: RouteSettings(name: "HomePage")
+         ),
        );
 
      }

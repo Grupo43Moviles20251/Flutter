@@ -28,8 +28,11 @@ class _LoginPageState extends State<LoginPage>{
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(child: _buildUI()),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: SafeArea(child: _buildUI()),
+      ),
     );
   }
 
