@@ -1,9 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Repositories/restaurant_repository.dart';
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../Services/connection_helper.dart';
+import 'dart:async';
 
 class SearchViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
@@ -16,6 +17,10 @@ class SearchViewModel extends ChangeNotifier {
   // ——— FAVORITES ———
   static const _prefsKey = 'favorite_names';
   Set<String> _favorites = {};
+
+  // ——— STREAM ———
+  final StreamController<List<Restaurant>> _searchStreamController = StreamController<List<Restaurant>>.broadcast();
+  Stream<List<Restaurant>> get searchStream => _searchStreamController.stream;
 
   SearchViewModel() {
     _loadFavorites();
@@ -39,6 +44,7 @@ class SearchViewModel extends ChangeNotifier {
     await prefs.setStringList(_prefsKey, _favorites.toList());
     notifyListeners();
   }
+
   // ——— /FAVORITES ———
 
   Future<void> loadAllRestaurants() async {
@@ -46,18 +52,10 @@ class SearchViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
-    final isConnected = await connectivityService.isConnected();
-    isOffline = !isConnected;
-
-    if (!isConnected) {
-      isLoading = false;
-      errorMessage = "No internet connection";
-      notifyListeners();
-      return;
-    }
-
     try {
       restaurants = await _restaurantRepository.fetchRestaurants();
+      // Emit the full list of restaurants to the stream
+      _searchStreamController.add(restaurants);
     } catch (e) {
       errorMessage = "Failed to load restaurants";
       print("Error al cargar restaurantes: $e");
@@ -91,14 +89,15 @@ class SearchViewModel extends ChangeNotifier {
         return;
       }
 
-      try {
-        restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
-      } catch (e) {
-        errorMessage = "Search failed";
-        print("Error buscando restaurantes: $e");
-      } finally {
-        isLoading = false;
-        notifyListeners();
-      }
+    
+    try {
+      restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
+    } catch (e) {
+      errorMessage = "Search failed";
+      print("Error buscando restaurantes: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
+  }
 }
