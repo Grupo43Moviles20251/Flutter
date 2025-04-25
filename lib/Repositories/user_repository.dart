@@ -14,6 +14,7 @@ abstract class UserRepository {
     String? address,
     String? birthday,
     File? profileImage,
+    String? existingImageUrl,
   });
 
   Future<void> saveUserLocally(UserDTO user);
@@ -31,12 +32,16 @@ class UserRepositoryImpl implements UserRepository {
     String? address,
     String? birthday,
     File? profileImage,
+    String? existingImageUrl,
   }) async {
     String? photoUrl;
 
     // Upload new profile image if provided
     if (profileImage != null) {
       photoUrl = await _firebaseService.uploadProfileImage( profileImage);
+    }
+    else{
+      photoUrl = existingImageUrl;
     }
 
     // Update email if changed

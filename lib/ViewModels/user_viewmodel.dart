@@ -15,6 +15,7 @@ class UserViewModel {
     String? address,
     String? birthday,
     File? profileImage,
+    String? existingImageUrl,
   }) async {
 
     final updatedUser = await _userRepository.updateUserProfile(
@@ -23,6 +24,7 @@ class UserViewModel {
       address: address,
       birthday: birthday,
       profileImage: profileImage,
+      existingImageUrl : existingImageUrl
     );
 
     await _userRepository.saveUserLocally(updatedUser);

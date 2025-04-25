@@ -76,6 +76,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         address: _addressController.text.isNotEmpty ? _addressController.text : null,
         birthday: _birthdayController.text.isNotEmpty ? _birthdayController.text : null,
         profileImage: _imageFile,
+          existingImageUrl: _imageUrl
       );
 
       if (!mounted) return;
