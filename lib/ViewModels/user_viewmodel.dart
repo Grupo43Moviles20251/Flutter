@@ -10,7 +10,6 @@ class UserViewModel {
   UserViewModel(this._userRepository);
 
   Future<UserDTO> updateProfile({
-    required String userId,
     required String name,
     required String email,
     String? address,
@@ -19,7 +18,6 @@ class UserViewModel {
   }) async {
 
     final updatedUser = await _userRepository.updateUserProfile(
-      userId: userId,
       name: name,
       email: email,
       address: address,

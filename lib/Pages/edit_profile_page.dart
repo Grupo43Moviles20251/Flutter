@@ -69,10 +69,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 
     try {
-      print(widget.userData.id);
 
       final updatedUser = await widget.viewModel.updateProfile(
-        userId: widget.userData.id!,
         name: _nameController.text,
         email: _emailController.text,
         address: _addressController.text.isNotEmpty ? _addressController.text : null,

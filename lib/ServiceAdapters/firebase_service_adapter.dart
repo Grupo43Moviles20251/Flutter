@@ -16,8 +16,8 @@ abstract class FirebaseServiceAdapter {
   Future<bool> forgotPassword(String email);
 
   Future<void> updateEmail(String newEmail);
-  Future<String> uploadProfileImage(String userId, File imageFile);
-  Future<void> updateUserData(String userId, Map<String, dynamic> userData);
+  Future<String> uploadProfileImage( File imageFile);
+  Future<void> updateUserData(Map<String, dynamic> userData);
 
 }
 
@@ -94,16 +94,18 @@ class FirebaseServiceAdapterImpl implements FirebaseServiceAdapter{
   }
 
   @override
-  Future<String> uploadProfileImage(String userId, File imageFile) async {
+  Future<String> uploadProfileImage( File imageFile) async {
+    final user = _auth.currentUser;
     final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    final ref = _storage.ref().child('profile_images/$userId/$fileName');
+    final ref = _storage.ref().child('profile_images/${user?.uid}/$fileName');
     await ref.putFile(imageFile);
     return await ref.getDownloadURL();
   }
 
   @override
-  Future<void> updateUserData(String userId, Map<String, dynamic> userData) async {
-    await _firestore.collection('users').doc(userId).set(userData, SetOptions(merge: true));
+  Future<void> updateUserData( Map<String, dynamic> userData) async {
+    final user = _auth.currentUser;
+    await _firestore.collection('users').doc(user?.uid).set(userData, SetOptions(merge: true));
   }
 }
 

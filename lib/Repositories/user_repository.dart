@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class UserRepository {
   Future<UserDTO> updateUserProfile({
-    required String userId,
     required String name,
     required String email,
     String? address,
@@ -27,7 +26,6 @@ class UserRepositoryImpl implements UserRepository {
 
   @override
   Future<UserDTO> updateUserProfile({
-    required String userId,
     required String name,
     required String email,
     String? address,
@@ -38,7 +36,7 @@ class UserRepositoryImpl implements UserRepository {
 
     // Upload new profile image if provided
     if (profileImage != null) {
-      photoUrl = await _firebaseService.uploadProfileImage(userId, profileImage);
+      photoUrl = await _firebaseService.uploadProfileImage( profileImage);
     }
 
     // Update email if changed
@@ -49,7 +47,6 @@ class UserRepositoryImpl implements UserRepository {
 
     // Prepare user data
     final userData = {
-      'id': userId,
       'name': name,
       'email': email,
       'address': address,
@@ -57,8 +54,7 @@ class UserRepositoryImpl implements UserRepository {
       if (photoUrl != null) 'photoUrl': photoUrl,
     };
 
-    // Update in Firestore
-    await _firebaseService.updateUserData(userId, userData);
+    await _firebaseService.updateUserData( userData);
 
     return UserDTO.fromJson(userData);
   }

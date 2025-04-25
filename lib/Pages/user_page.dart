@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:first_app/Repositories/user_repository.dart';
 import 'package:first_app/ViewModels/user_viewmodel.dart';
 import 'package:flutter/material.dart';
@@ -58,16 +59,26 @@ class _UserPageState extends State<UserPage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey[200],
-                  backgroundImage: userData?.photoUrl != null
-                      ? NetworkImage(userData!.photoUrl!)
-                      : null,
-                  child: userData?.photoUrl == null
-                      ? Icon(
+                  child: userData?.photoUrl != null
+                      ? ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: userData!.photoUrl!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )
+                      : Icon(
                     Icons.person,
                     size: 60,
                     color: Colors.grey[600],
-                  )
-                      : null,
+                  ),
                 ),
                 SizedBox(height: 20),
 
