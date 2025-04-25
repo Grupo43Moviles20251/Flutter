@@ -5,7 +5,6 @@ import 'package:first_app/Widgets/restaurant_card.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-
 class SearchPage extends StatelessWidget {
   final TextEditingController _searchController = TextEditingController();
   final int selectedIndex;
@@ -39,11 +38,12 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
 
-                // Filters
+                // Filters (in a single line)
                 if (!viewModel.isOffline) // Only show filters when online
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Column(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,  // Distribute buttons evenly
                       children: [
                         FilterButton(
                           label: 'Cafés',
@@ -54,7 +54,6 @@ class SearchPage extends StatelessWidget {
                             type: 2,
                           ),
                         ),
-                        const SizedBox(height: 10),
                         FilterButton(
                           label: 'Restaurants',
                           iconPath: 'assets/restaurant.png',
@@ -64,9 +63,8 @@ class SearchPage extends StatelessWidget {
                             type: 1,
                           ),
                         ),
-                        const SizedBox(height: 10),
                         FilterButton(
-                          label: 'SuperMarkets',
+                          label: 'Markets',
                           iconPath: 'assets/market.png',
                           onPressed: () => viewModel.searchRestaurants(
                             context,
@@ -146,7 +144,6 @@ class SearchPage extends StatelessWidget {
   }
 }
 
-
 class FilterButton extends StatelessWidget {
   final String label;
   final String iconPath;
@@ -164,18 +161,21 @@ class FilterButton extends StatelessWidget {
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: Color(0xFF2A9D8F),
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),  // Reduced padding
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Image.asset(iconPath, width: 30, height: 30),
-          SizedBox(width: 10),
+          Image.asset(iconPath, width: 24, height: 24),  // Smaller icons
+          SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
               fontFamily: 'MontserratAlternates',
-              fontSize: 24,
+              fontSize: 14,  // Smaller font size
               color: Colors.white,
             ),
           ),
