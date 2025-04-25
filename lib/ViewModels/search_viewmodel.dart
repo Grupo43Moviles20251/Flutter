@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Repositories/restaurant_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 import '../Services/connection_helper.dart';
 import 'dart:async';
@@ -47,30 +48,32 @@ class SearchViewModel extends ChangeNotifier {
 
   // ——— /FAVORITES ———
 
-  Future<void> loadAllRestaurants() async {
+  Future<void> searchRestaurants(String query, {int? type}) async {
+    if (query.isEmpty && type == null) {
+      return loadAllRestaurants();
+    }
+
     isLoading = true;
-    errorMessage = null;
     notifyListeners();
 
     try {
-      restaurants = await _restaurantRepository.fetchRestaurants();
-      // Emit the full list of restaurants to the stream
+      restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
+
+
       _searchStreamController.add(restaurants);
     } catch (e) {
-      errorMessage = "Failed to load restaurants";
-      print("Error al cargar restaurantes: $e");
+      errorMessage = "Search failed";
+      print("Error buscando restaurantes: $e");
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> searchRestaurants(BuildContext context, query, {int? type}) async {
-    if (query.isEmpty && type == null) {
-      return loadAllRestaurants();
-    }
+  Future<void> loadAllRestaurants() async {
 
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
 
     final isConnected = await connectivityService.isConnected();
@@ -91,10 +94,13 @@ class SearchViewModel extends ChangeNotifier {
 
     
     try {
-      restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
+      restaurants = await _restaurantRepository.fetchRestaurants();
+
+      // Emit the full list of restaurants to the stream
+      _searchStreamController.add(restaurants);
     } catch (e) {
-      errorMessage = "Search failed";
-      print("Error buscando restaurantes: $e");
+      errorMessage = "Failed to load restaurants";
+      print("Error al cargar restaurantes: $e");
     } finally {
       isLoading = false;
       notifyListeners();
