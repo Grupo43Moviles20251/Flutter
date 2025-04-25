@@ -20,7 +20,7 @@ class SignRepository implements SignUpRepository {
       final result = await backendServiceAdapter.signUp(name, email, password, address, birthday);
       return result ;
     } catch(e){
-      return "Error creating the user";
+      return e.toString();
 
     }
   }
