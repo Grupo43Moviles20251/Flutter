@@ -191,8 +191,8 @@ class _UserPageState extends State<UserPage> {
                             ),
                           );
                           return;
-                        } else{
-                        _logout;}
+                        }
+                        await _logout();
                       },
 
                       style: ElevatedButton.styleFrom(

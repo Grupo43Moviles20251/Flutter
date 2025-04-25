@@ -21,12 +21,13 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
   bool _isOnline = true;
-  late MapViewModel _viewModel;
+  late MapViewModel _viewModel = MapViewModel();
 
   @override
   void initState() {
     super.initState();
     _checkConnectivity();
+    _viewModel.reset();
   }
 
   @override
