@@ -1,8 +1,12 @@
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:first_app/Repositories/user_repository.dart';
+import 'package:first_app/ViewModels/user_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:first_app/Dtos/user_dto.dart';
+import 'edit_profile_page.dart';
 import 'login_page.dart';
 import 'dart:convert';
 
@@ -55,7 +59,22 @@ class _UserPageState extends State<UserPage> {
                 CircleAvatar(
                   radius: 60,
                   backgroundColor: Colors.grey[200],
-                  child: Icon(
+                  child: userData?.photoUrl != null
+                      ? ClipOval(
+                    child: CachedNetworkImage(
+                      imageUrl: userData!.photoUrl!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => CircularProgressIndicator(),
+                      errorWidget: (context, url, error) => Icon(
+                        Icons.person,
+                        size: 60,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  )
+                      : Icon(
                     Icons.person,
                     size: 60,
                     color: Colors.grey[600],
@@ -98,24 +117,65 @@ class _UserPageState extends State<UserPage> {
                   ),
                 ),
                 SizedBox(height: 40),
+// En el build method de UserPage, añade este botón junto al de logout:
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Botón de Editar
+                    ElevatedButton(
+                      onPressed: () async {
+                        SharedPreferences prefs = await SharedPreferences.getInstance();
+                        String? userJson = prefs.getString('userData');
+                        userData = UserDTO.fromJson(json.decode(userJson!));
 
-                // Logout Button
-                ElevatedButton(
-                  onPressed: _logout,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                        final updatedUser = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => EditProfilePage(userData: userData!, viewModel: UserViewModel(UserRepositoryImpl()),),
+                          ),
+                        );
+
+                        if (updatedUser != null) {
+                          setState(() {
+                            userData = updatedUser;
+                          });
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:  Color(0xFF2A9D8F),
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Edit Profile",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                  child: Text(
-                    "Sign Out",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
+
+                    // Botón de Logout (el que ya tenías)
+                    ElevatedButton(
+                      onPressed: _logout,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        "Sign Out",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ],
             ),
