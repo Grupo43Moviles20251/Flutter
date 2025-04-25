@@ -112,6 +112,7 @@ class FirebaseServiceAdapterImpl implements FirebaseServiceAdapter{
     await _firestore.collection('users').doc(user?.uid).set(userData, SetOptions(merge: true));
   }
 
+
   @override
   Future<void> sendOrderAnalytics(int productId, String nameProduct, int quantity) async {
     try {
