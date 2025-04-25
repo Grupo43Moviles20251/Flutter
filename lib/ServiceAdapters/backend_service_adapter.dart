@@ -68,49 +68,47 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
   @override
   Future<List<Restaurant>> fetchRestaurants() async {
     try {
+      print("Fetching restaurants from $baseUrl/restaurants");
       final response = await http.get(Uri.parse('$baseUrl/restaurants'));
-      if (response.statusCode == 200) {
-        List<dynamic> data = json.decode(response.body);
+      print("Response status: ${response.statusCode}");
 
-        // Aquí ejecutamos la filtración de restaurantes en un Isolate
-        return await _processRestaurantsInBackground(data.map((json) => Restaurant.fromJson(json)).toList());
+      if (response.statusCode == 200) {
+        // Process in isolate only if the data is large
+        return await _processInIsolate(response.body);
       } else {
-        throw Exception('Error fetching restaurants');
+        throw Exception('Error fetching restaurants: ${response.statusCode}');
       }
     } catch (e) {
+      print("Error in fetchRestaurants: $e");
       return [];
     }
   }
 
-  Future<List<Restaurant>> _processRestaurantsInBackground(List<Restaurant> restaurants) async {
+  Future<List<Restaurant>> _processInIsolate(String jsonData) async {
     final receivePort = ReceivePort();
 
-    // Enviar los restaurantes al Isolate para ser procesados en segundo plano
-    await Isolate.spawn(_processRestaurants, receivePort.sendPort);
+    await Isolate.spawn(
+      _parseRestaurantsJson,
+      _IsolateData(receivePort.sendPort, jsonData),
+    );
 
-    // Esperamos el resultado del Isolate
-    final sendPort = await receivePort.first as SendPort;
-    final result = await _sendRestaurantsToIsolate(sendPort, restaurants);
-
-    return result;
+    // Get the processed data from the isolate
+    final restaurants = await receivePort.first;
+    return restaurants as List<Restaurant>;
   }
 
-  static void _processRestaurants(SendPort sendPort) {
-    // Este método se ejecutará en el Isolate
+  static void _parseRestaurantsJson(_IsolateData data) {
+    try {
+      // Parse JSON in the isolate
+      final jsonList = json.decode(data.jsonData) as List;
+      final restaurants = jsonList.map((json) => Restaurant.fromJson(json)).toList();
 
-    // Recibimos los restaurantes a procesar
-    final restaurants = []; // Agrega la lógica para procesar los restaurantes (ejemplo: filtrado o transformación)
-
-    // Enviar el resultado de vuelta al hilo principal
-    sendPort.send(restaurants);
-  }
-
-  Future<List<Restaurant>> _sendRestaurantsToIsolate(SendPort sendPort, List<Restaurant> restaurants) async {
-    final receivePort = ReceivePort();
-    sendPort.send([restaurants, receivePort.sendPort]);
-
-    final result = await receivePort.first;
-    return result as List<Restaurant>;
+      // Send result back to main isolate
+      data.sendPort.send(restaurants);
+    } catch (e) {
+      // Send empty list if error occurs
+      data.sendPort.send(<Restaurant>[]);
+    }
   }
 
   @override
@@ -203,4 +201,12 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       return "Error ordering the item";
     }
   }
+
+}
+
+class _IsolateData {
+  final SendPort sendPort;
+  final String jsonData;
+
+  _IsolateData(this.sendPort, this.jsonData);
 }
