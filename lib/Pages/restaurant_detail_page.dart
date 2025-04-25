@@ -13,15 +13,18 @@ class RestaurantDetailPage extends StatelessWidget {
   final bool isFavoritePage;
   final RestaurantDetailViewModel viewModel = RestaurantDetailViewModel();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey();
+  
 
   RestaurantDetailPage({
     super.key,
     required this.restaurant,
     this.isFavoritePage = false,
   });
+  
 
   @override
   Widget build(BuildContext context) {
+    final product = restaurant.products[0];
     return
       ScaffoldMessenger(
           key: scaffoldMessengerKey,
@@ -176,11 +179,13 @@ class RestaurantDetailPage extends StatelessWidget {
                                     Icons.directions, color: Colors.white),
                                 padding: EdgeInsets.all(16),
                                 onPressed: () async {
+                                  await viewModel.logDirections(product.productId.toString());
                                   final Uri directionsUri = Uri.parse(
                                       'https://www.google.com/maps/dir/?api=1&destination='
                                           '${restaurant.latitude},${restaurant
                                           .longitude}&travelmode=driving'
                                   );
+                                
 
                                   if (await canLaunchUrl(directionsUri)) {
                                     await launchUrl(directionsUri);
@@ -335,8 +340,7 @@ class RestaurantDetailPage extends StatelessWidget {
             return ;}
                       final orderCode = await viewModel.orderItem(
                           product.productId, selectedQuantity);
-
-
+                     
                       Navigator.of(scaffoldMessengerKey.currentContext!,
                           rootNavigator: true).pop();
 

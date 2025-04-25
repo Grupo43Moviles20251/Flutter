@@ -22,4 +22,8 @@ class RestaurantDetailViewModel {
       return "Error";
     }
   }
+
+  Future<void> logDirections(String productId) {
+    return _repository.logDetailEvent(productId, 'directions');
+  }
 }
