@@ -7,6 +7,7 @@ class SearchViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
   List<Restaurant> restaurants = [];
   bool isLoading = true;
+  String? errorMessage;
 
   // ——— FAVORITES ———
   static const _prefsKey = 'favorite_names';
@@ -38,31 +39,36 @@ class SearchViewModel extends ChangeNotifier {
 
   Future<void> loadAllRestaurants() async {
     isLoading = true;
+    errorMessage = null;
     notifyListeners();
 
     try {
-      print("Cargando todos los restaurantes...");
       restaurants = await _restaurantRepository.fetchRestaurants();
-      print("Restaurantes cargados: ${restaurants.length}");
     } catch (e) {
+      errorMessage = "Failed to load restaurants";
       print("Error al cargar restaurantes: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-
-    isLoading = false;
-    notifyListeners();
   }
 
   Future<void> searchRestaurants(String query, {int? type}) async {
+    if (query.isEmpty && type == null) {
+      return loadAllRestaurants();
+    }
+
     isLoading = true;
     notifyListeners();
 
     try {
       restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
     } catch (e) {
+      errorMessage = "Search failed";
       print("Error buscando restaurantes: $e");
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-
-    isLoading = false;
-    notifyListeners();
   }
 }

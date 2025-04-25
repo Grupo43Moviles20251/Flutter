@@ -14,7 +14,7 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SearchViewModel(),
+      create: (_) => SearchViewModel()..loadAllRestaurants(),
       child: Consumer<SearchViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(
