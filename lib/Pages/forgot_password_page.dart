@@ -2,6 +2,8 @@ import 'package:first_app/ViewModels/forgot_password_viewmodel.dart';
 import 'package:first_app/Repositories/forgot_password_repository.dart';
 import 'package:flutter/material.dart';
 
+import '../Services/connection_helper.dart';
+
 class ForgotPasswordPage extends StatefulWidget{
 
   const ForgotPasswordPage({super.key});
@@ -17,7 +19,7 @@ class _ForgotPasswordPage extends State<ForgotPasswordPage>{
   final GlobalKey<FormState>  _forgotFormKey = GlobalKey();
   final TextEditingController _emailController = TextEditingController();
 
-  final ForgotPasswordViewmodel _viewModel = ForgotPasswordViewmodel(forgotPassRepository());
+  final ForgotPasswordViewmodel _viewModel = ForgotPasswordViewmodel(forgotPassRepository(), ConnectivityService());
 
   @override
   Widget build(BuildContext context) {

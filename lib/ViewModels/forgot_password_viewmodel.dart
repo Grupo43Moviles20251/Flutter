@@ -1,5 +1,6 @@
 
 import 'package:first_app/Repositories/forgot_password_repository.dart';
+import 'package:first_app/Services/connection_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
@@ -7,10 +8,25 @@ import '../Pages/login_page.dart';
 
 class ForgotPasswordViewmodel {
   final ForgotPasswordRepository _forgotPasswordRepository;
+  final ConnectivityService _connectivityService;
 
-  ForgotPasswordViewmodel(this._forgotPasswordRepository);
+  ForgotPasswordViewmodel(this._forgotPasswordRepository, this._connectivityService);
 
   Future<void> forgotPassword( String email, BuildContext context) async {
+
+    final isConnected = await _connectivityService.isConnected();
+    if(!isConnected){
+      if (context.mounted) {
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No internet connection. Try again to send the link when you\'re back online.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
 
     showDialog(
       context: context,

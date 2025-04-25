@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:first_app/Repositories/user_repository.dart';
+import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/ViewModels/user_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,24 +19,33 @@ class UserPage extends StatefulWidget {
 class _UserPageState extends State<UserPage> {
   UserDTO? userData;
   bool isLoading = true;
+  bool isOnline = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final connectivityResult = await ConnectivityService().isConnected();
+    if (mounted) {
+      setState(() {
+        isOnline = connectivityResult;
+      });
+    }
   }
 
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userJson = prefs.getString('userData');
 
-    if (userJson != null) {
+    if (mounted) {
       setState(() {
-        userData = UserDTO.fromJson(json.decode(userJson));
-        isLoading = false;
-      });
-    } else {
-      setState(() {
+        if (userJson != null) {
+          userData = UserDTO.fromJson(json.decode(userJson));
+        }
         isLoading = false;
       });
     }
@@ -121,28 +131,41 @@ class _UserPageState extends State<UserPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    // Botón de Editar
+                    // Edit Button
                     ElevatedButton(
                       onPressed: () async {
+                        if (!isOnline) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No internet connection. Try again when you\'re back online.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          return;
+                        }
+
                         SharedPreferences prefs = await SharedPreferences.getInstance();
                         String? userJson = prefs.getString('userData');
-                        userData = UserDTO.fromJson(json.decode(userJson!));
+                        if (userJson != null) {
+                          final updatedUser = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditProfilePage(
+                                userData: UserDTO.fromJson(json.decode(userJson)),
+                                viewModel: UserViewModel(UserRepositoryImpl()),
+                              ),
+                            ),
+                          );
 
-                        final updatedUser = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => EditProfilePage(userData: userData!, viewModel: UserViewModel(UserRepositoryImpl()),),
-                          ),
-                        );
-
-                        if (updatedUser != null) {
-                          setState(() {
-                            userData = updatedUser;
-                          });
+                          if (updatedUser != null && mounted) {
+                            setState(() {
+                              userData = updatedUser;
+                            });
+                          }
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:  Color(0xFF2A9D8F),
+                        backgroundColor: Color(0xFF2A9D8F),
                         padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -157,9 +180,21 @@ class _UserPageState extends State<UserPage> {
                       ),
                     ),
 
-                    // Botón de Logout (el que ya tenías)
+                    // Sign Out Button
                     ElevatedButton(
-                      onPressed: _logout,
+                      onPressed: () async {
+                        if (!isOnline) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No internet connection. Try again when you\'re back online.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          return;
+                        } else{
+                        _logout;}
+                      },
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.red,
                         padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),

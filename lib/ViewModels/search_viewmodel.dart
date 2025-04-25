@@ -3,10 +3,14 @@ import 'package:first_app/Repositories/restaurant_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../Services/connection_helper.dart';
+
 class SearchViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
+  final ConnectivityService connectivityService = ConnectivityService();
   List<Restaurant> restaurants = [];
   bool isLoading = true;
+  bool isOffline = false;
   String? errorMessage;
 
   // ——— FAVORITES ———
@@ -42,6 +46,16 @@ class SearchViewModel extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
 
+    final isConnected = await connectivityService.isConnected();
+    isOffline = !isConnected;
+
+    if (!isConnected) {
+      isLoading = false;
+      errorMessage = "No internet connection";
+      notifyListeners();
+      return;
+    }
+
     try {
       restaurants = await _restaurantRepository.fetchRestaurants();
     } catch (e) {
@@ -53,7 +67,7 @@ class SearchViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> searchRestaurants(String query, {int? type}) async {
+  Future<void> searchRestaurants(BuildContext context, query, {int? type}) async {
     if (query.isEmpty && type == null) {
       return loadAllRestaurants();
     }
@@ -61,14 +75,30 @@ class SearchViewModel extends ChangeNotifier {
     isLoading = true;
     notifyListeners();
 
-    try {
-      restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
-    } catch (e) {
-      errorMessage = "Search failed";
-      print("Error buscando restaurantes: $e");
-    } finally {
+    final isConnected = await connectivityService.isConnected();
+    isOffline = !isConnected;
+
+    if (!isConnected) {
       isLoading = false;
-      notifyListeners();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No internet connection. Try again when you\'re back online.'),
+              duration: Duration(seconds: 3),
+            ));
+        }
+            notifyListeners();
+        return;
+      }
+
+      try {
+        restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
+      } catch (e) {
+        errorMessage = "Search failed";
+        print("Error buscando restaurantes: $e");
+      } finally {
+        isLoading = false;
+        notifyListeners();
+      }
     }
-  }
 }

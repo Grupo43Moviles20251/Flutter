@@ -4,6 +4,7 @@ import 'package:first_app/Models/restaurant_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../Services/connection_helper.dart';
 import '../ViewModels/restaurant_detail_viewmodel.dart';
 import 'home_page.dart';
 
@@ -13,11 +14,21 @@ class RestaurantDetailPage extends StatelessWidget {
   final RestaurantDetailViewModel viewModel = RestaurantDetailViewModel();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey();
 
+  bool _isOnline = true;
+
+
   RestaurantDetailPage({
     super.key,
     required this.restaurant,
     this.isFavoritePage = false,
-  });
+  }) {
+    _checkConnectivity();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final isConnected = await ConnectivityService().isConnected();
+    _isOnline = isConnected;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -146,13 +157,17 @@ class RestaurantDetailPage extends StatelessWidget {
                             Expanded(
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF2A9D8F),
+                        backgroundColor: _isOnline
+                        ? Color(0xFF2A9D8F)
+                          : Colors.grey,
                                   padding: EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                onPressed: () => _showOrderDialog(context),
+                  onPressed: _isOnline
+                      ? () => _showOrderDialog(context)
+                      : null,
                                 child: Text(
                                   'Order',
                                   style: TextStyle(
@@ -174,7 +189,7 @@ class RestaurantDetailPage extends StatelessWidget {
                                 icon: Icon(
                                     Icons.directions, color: Colors.white),
                                 padding: EdgeInsets.all(16),
-                                onPressed: () async {
+                                onPressed: _isOnline ? () async {
                                   final Uri directionsUri = Uri.parse(
                                       'https://www.google.com/maps/dir/?api=1&destination='
                                           '${restaurant.latitude},${restaurant
@@ -188,7 +203,7 @@ class RestaurantDetailPage extends StatelessWidget {
                                         SnackBar(content: Text(
                                             "Could not launch Google Maps")));
                                   }
-                                },
+                                }: null,
                               ),
                             ),
                           ],
@@ -234,6 +249,16 @@ class RestaurantDetailPage extends StatelessWidget {
   }
 
   void _showOrderDialog(BuildContext context) {
+    if (!_isOnline) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('No internet connection. Try again when you\'re back online.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     final product = restaurant.products[0];
     int selectedQuantity = 1;
 
@@ -255,27 +280,16 @@ class RestaurantDetailPage extends StatelessWidget {
                       IconButton(
                         icon: Icon(Icons.remove),
                         onPressed: selectedQuantity > 1
-                            ? () {
-                          setState(() {
-                            selectedQuantity--;
-                          });
-                        }
+                            ? () => setState(() => selectedQuantity--)
                             : null,
                       ),
                       SizedBox(width: 16),
-                      Text(
-                        '$selectedQuantity',
-                        style: TextStyle(fontSize: 20),
-                      ),
+                      Text('$selectedQuantity', style: TextStyle(fontSize: 20)),
                       SizedBox(width: 16),
                       IconButton(
                         icon: Icon(Icons.add),
                         onPressed: selectedQuantity < product.amount
-                            ? () {
-                          setState(() {
-                            selectedQuantity++;
-                          });
-                        }
+                            ? () => setState(() => selectedQuantity++)
                             : null,
                       ),
                     ],
@@ -293,57 +307,40 @@ class RestaurantDetailPage extends StatelessWidget {
                   child: Text('Cancel'),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color(0xFF2A9D8F),
+                  ),
                   onPressed: () async {
                     Navigator.pop(dialogContext);
-                    // Show loading dialog
+
+                    // Mostrar diálogo de carga
                     showDialog(
-                      context: scaffoldMessengerKey.currentContext!,
+                      context: context,
                       barrierDismissible: false,
-                      builder: (BuildContext context) {
-                        return Dialog(
-                          backgroundColor: Colors.transparent,
-                          elevation: 0,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                      Color(0xFF2A9D8F))),
-                              SizedBox(height: 20),
-                              Text(
-                                'Processing your order...',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
+                      builder: (context) => Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2A9D8F)),
+                        ),
+                      ),
                     );
 
                     try {
                       final orderCode = await viewModel.orderItem(
-                          product.productId, selectedQuantity);
+                          context,
+                          product.productId,
+                          selectedQuantity
+                      );
 
-                      // Close loading dialog
-                      Navigator.of(scaffoldMessengerKey.currentContext!,
-                          rootNavigator: true).pop();
+                      Navigator.of(context, rootNavigator: true).pop(); // Cerrar diálogo de carga
 
-                      if (orderCode == "Error") {
-                        _showErrorDialog(scaffoldMessengerKey.currentContext!);
+                      if (orderCode == "Error" || orderCode == "No Internet Connection") {
+                        _showErrorDialog(context);
                       } else {
-                        _showOrderConfirmationDialog(
-                            scaffoldMessengerKey.currentContext!,
-                            orderCode!
-                        );
+                        _showOrderConfirmationDialog(context, orderCode!);
                       }
                     } catch (e) {
-                      // Close loading dialog in case of error
-                      Navigator.of(scaffoldMessengerKey.currentContext!,
-                          rootNavigator: true).pop();
-                      _showErrorDialog(
-                          scaffoldMessengerKey.currentContext!,
-                          errorMessage: 'Error: ${e.toString()}'
-                      );
+                      Navigator.of(context, rootNavigator: true).pop(); // Cerrar diálogo de carga
+                      _showErrorDialog(context);
                     }
                   },
                   child: Text('Order'),

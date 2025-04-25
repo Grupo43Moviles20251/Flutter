@@ -21,82 +21,122 @@ class SearchPage extends StatelessWidget {
             selectedIndex: selectedIndex,
             body: Column(
               children: [
-                // Barra de búsqueda
+                // Search bar
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: viewModel.searchRestaurants,
-                    decoration: InputDecoration(
-                      hintText: 'Search...',
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
+                  child: Builder(
+                    builder: (textFieldContext) {
+                      return TextField(
+                        controller: _searchController,
+                        onChanged: (query) => viewModel.searchRestaurants(textFieldContext, query),
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                // Filters
+                if (!viewModel.isOffline) // Only show filters when online
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Column(
+                      children: [
+                        FilterButton(
+                          label: 'Cafés',
+                          iconPath: 'assets/cafe.png',
+                          onPressed: () => viewModel.searchRestaurants(
+                            context,
+                            _searchController.text,
+                            type: 2,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        FilterButton(
+                          label: 'Restaurants',
+                          iconPath: 'assets/restaurant.png',
+                          onPressed: () => viewModel.searchRestaurants(
+                            context,
+                            _searchController.text,
+                            type: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        FilterButton(
+                          label: 'SuperMarkets',
+                          iconPath: 'assets/market.png',
+                          onPressed: () => viewModel.searchRestaurants(
+                            context,
+                            _searchController.text,
+                            type: 3,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
 
-                // Filtros (uno sobre otro)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    children: [
-                      FilterButton(
-                        label: 'Cafés',
-                        iconPath: 'assets/cafe.png',
-                        onPressed: () => viewModel.searchRestaurants(
-                          _searchController.text,
-                          type: 2,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      FilterButton(
-                        label: 'Restaurants',
-                        iconPath: 'assets/restaurant.png',
-                        onPressed: () => viewModel.searchRestaurants(
-                          _searchController.text,
-                          type: 1,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      FilterButton(
-                        label: 'SuperMarkets',
-                        iconPath: 'assets/market.png',
-                        onPressed: () => viewModel.searchRestaurants(
-                          _searchController.text,
-                          type: 3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Lista de resultados
+                // Results or status
                 if (viewModel.isLoading)
-                  Expanded(child: Center(child: CircularProgressIndicator()))
-                else
+                  const Expanded(child: Center(child: CircularProgressIndicator()))
+                else if (viewModel.isOffline)
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: viewModel.restaurants.length,
-                      itemBuilder: (context, index) {
-                        final r = viewModel.restaurants[index];
-                        return RestaurantCard(
-                          restaurant: r,
-                          isFavoritePage: false,
-                          isFavorite: viewModel.isFavorite(r),
-                          onFavoriteToggle: () => viewModel.toggleFavorite(r),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => RestaurantDetailPage(restaurant: r),
-                                settings: RouteSettings(name: "RestaurantDetail"),
-                              ),
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.signal_wifi_off, size: 64, color: Colors.grey),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'No Internet Connection',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text('Please check your connection and try again'),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => viewModel.loadAllRestaurants(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else if (viewModel.restaurants.isEmpty)
+                    const Expanded(
+                      child: Center(
+                        child: Text('No restaurants found'),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () => viewModel.loadAllRestaurants(),
+                        child: ListView.builder(
+                          itemCount: viewModel.restaurants.length,
+                          itemBuilder: (context, index) {
+                            final r = viewModel.restaurants[index];
+                            return RestaurantCard(
+                              restaurant: r,
+                              isFavoritePage: false,
+                              isFavorite: viewModel.isFavorite(r),
+                              onFavoriteToggle: () => viewModel.toggleFavorite(r),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => RestaurantDetailPage(restaurant: r),
+                                    settings: const RouteSettings(name: "RestaurantDetail"),
+                                  ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
+                        ),
+                      ),
                     ),
-                  ),
               ],
             ),
           );
