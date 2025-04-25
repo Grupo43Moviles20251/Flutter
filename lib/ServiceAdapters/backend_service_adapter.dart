@@ -61,8 +61,11 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return UserDTO.fromJson(json.decode(response.body));
-    } else {
-      throw Exception('Failed to create user: ${response.statusCode}');
+    } else if(response.statusCode == 409){
+      throw Exception('This email is already registered');
+    }
+    else {
+      throw Exception('Failed to create user');
     }
   }
 
@@ -162,7 +165,11 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       if (response.statusCode == 200){
         return "Success";
 
+      }else if (response.statusCode == 400) {
+        return "This email is already in use";
+
       }else{
+        print(response.statusCode);
         return "Could not create the user";
       }
     } catch(e){
