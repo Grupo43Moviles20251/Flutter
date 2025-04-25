@@ -1,11 +1,10 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:isolate';  // Importante para trabajar con Isolates
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:http/http.dart' as http;
 import '../Dtos/user_dto.dart';
 
 abstract class BackendServiceAdapter {
-
   Future<UserDTO> getUserProfile(String token);
   Future<UserDTO> createUser(UserDTO user, String token);
 
@@ -18,12 +17,9 @@ abstract class BackendServiceAdapter {
   Future<String> orderItem(int itemId, int quantity);
 }
 
-
 class BackendServiceAdapterImpl implements BackendServiceAdapter {
-
   final String baseUrl;
   final http.Client client;
-
 
   BackendServiceAdapterImpl({
     required this.baseUrl,
@@ -41,7 +37,6 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
     ).timeout(const Duration(seconds: 10));
 
     if (response.statusCode == 200) {
-
       return UserDTO.fromJson(json.decode(response.body));
     } else {
       throw Exception('No connection with the server: ${response.statusCode}');
@@ -69,24 +64,57 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
     }
   }
 
+  // Usamos Isolates para procesar grandes cantidades de datos sin bloquear la UI
   @override
   Future<List<Restaurant>> fetchRestaurants() async {
     try {
       final response = await http.get(Uri.parse('$baseUrl/restaurants'));
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
-        return data.map((json) => Restaurant.fromJson(json)).toList();
-      }
-      else {
+
+        // Aquí ejecutamos la filtración de restaurantes en un Isolate
+        return await _processRestaurantsInBackground(data.map((json) => Restaurant.fromJson(json)).toList());
+      } else {
         throw Exception('Error fetching restaurants');
       }
-    } catch(e){
+    } catch (e) {
       return [];
     }
   }
 
+  Future<List<Restaurant>> _processRestaurantsInBackground(List<Restaurant> restaurants) async {
+    final receivePort = ReceivePort();
+
+    // Enviar los restaurantes al Isolate para ser procesados en segundo plano
+    await Isolate.spawn(_processRestaurants, receivePort.sendPort);
+
+    // Esperamos el resultado del Isolate
+    final sendPort = await receivePort.first as SendPort;
+    final result = await _sendRestaurantsToIsolate(sendPort, restaurants);
+
+    return result;
+  }
+
+  static void _processRestaurants(SendPort sendPort) {
+    // Este método se ejecutará en el Isolate
+
+    // Recibimos los restaurantes a procesar
+    final restaurants = []; // Agrega la lógica para procesar los restaurantes (ejemplo: filtrado o transformación)
+
+    // Enviar el resultado de vuelta al hilo principal
+    sendPort.send(restaurants);
+  }
+
+  Future<List<Restaurant>> _sendRestaurantsToIsolate(SendPort sendPort, List<Restaurant> restaurants) async {
+    final receivePort = ReceivePort();
+    sendPort.send([restaurants, receivePort.sendPort]);
+
+    final result = await receivePort.first;
+    return result as List<Restaurant>;
+  }
+
   @override
-  Future<List<Restaurant>> fetchRestaurantsByType(int type) async{
+  Future<List<Restaurant>> fetchRestaurantsByType(int type) async {
     try {
       print(type);
       var response = await http.get(Uri.parse('$baseUrl/type/$type'));
@@ -125,31 +153,9 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
     }
   }
 
-  Future<List<String>> getFavoriteRestaurantIds() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String>? favoriteIds = prefs.getStringList('favorite_restaurants');
-    return favoriteIds ?? [];
-  }
-
-  Future<void> addFavoriteRestaurant(String restaurantId) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> favoriteIds = prefs.getStringList('favorite_restaurants') ?? [];
-    if (!favoriteIds.contains(restaurantId)) {
-      favoriteIds.add(restaurantId);
-      await prefs.setStringList('favorite_restaurants', favoriteIds);
-    }
-  }
-
-  Future<void> removeFavoriteRestaurant(String restaurantId) async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> favoriteIds = prefs.getStringList('favorite_restaurants') ?? [];
-    favoriteIds.remove(restaurantId);
-    await prefs.setStringList('favorite_restaurants', favoriteIds);
-  }
-
   @override
   Future<String> signUp(String name, String email, String password, String address, String birthday) async {
-    try{
+    try {
       var response = await http.post(
         Uri.parse('$baseUrl/signup'),
         headers: {'Content-Type': 'application/json'},
@@ -162,27 +168,21 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
         }),
       );
 
-      if (response.statusCode == 200){
+      if (response.statusCode == 200) {
         return "Success";
 
-      }else if (response.statusCode == 400) {
-        return "This email is already in use";
+      }else {
 
-      }else{
-        print(response.statusCode);
         return "Could not create the user";
       }
-    } catch(e){
-
+    } catch (e) {
       return "Error creating the user";
-
     }
   }
 
   @override
   Future<String> orderItem(int itemId, int quantity) async {
-    try{
-
+    try {
       var response = await http.post(
         Uri.parse('$baseUrl/order'),
         headers: {'Content-Type': 'application/json'},
@@ -192,20 +192,15 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
         }),
       );
 
-
-      if (response.statusCode == 200){
+      if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final claimCode = data['code'];
         return claimCode;
-
-      }else{
+      } else {
         return "Could not order the item";
       }
-    } catch(e){
-
+    } catch (e) {
       return "Error ordering the item";
-
     }
   }
-
 }

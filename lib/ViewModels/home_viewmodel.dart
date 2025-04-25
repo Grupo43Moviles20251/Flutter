@@ -4,6 +4,8 @@ import 'package:first_app/Services/connection_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // For JSON serialization
+import 'dart:async'; // For Isolate and async operations
+import 'dart:isolate'; // For Isolate usage
 
 class HomeViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
@@ -19,6 +21,9 @@ class HomeViewModel extends ChangeNotifier {
   bool isOffline = false;
 
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
+
+  final StreamController<List<Restaurant>> _restaurantsStreamController = StreamController<List<Restaurant>>.broadcast();
+  Stream<List<Restaurant>> get restaurantsStream => _restaurantsStreamController.stream;
 
   HomeViewModel() {
     _loadFavorites();
@@ -55,6 +60,9 @@ class HomeViewModel extends ChangeNotifier {
         // Fetch fresh data from network
         restaurants = await _restaurantRepository.fetchRestaurants();
 
+        // Emit the data to the stream
+        _restaurantsStreamController.add(restaurants);
+
         // Cache the new data
         final cacheData = restaurants.map((r) => r.toJson()).toList();
         await prefs.setString(_cacheKey, json.encode(cacheData));
@@ -85,12 +93,42 @@ class HomeViewModel extends ChangeNotifier {
       if (cachedData != null && cacheAge < _cacheDuration) {
         final List<dynamic> jsonData = json.decode(cachedData);
         restaurants = jsonData.map((json) => Restaurant.fromJson(json)).toList();
+        _restaurantsStreamController.add(restaurants);
       } else {
         restaurants = [];
+        _restaurantsStreamController.add(restaurants); // Emit empty list if no cache
       }
     } catch (e) {
       print("Error loading from cache: $e");
       restaurants = [];
+      _restaurantsStreamController.add(restaurants);
     }
+  }
+
+  // Isolate for processing restaurant data in background
+  Future<void> processRestaurantsInBackground(List<Restaurant> data) async {
+    final receivePort = ReceivePort();
+    await Isolate.spawn(_filterRestaurants, receivePort.sendPort);
+    final sendPort = await receivePort.first;
+
+    final resultPort = ReceivePort();
+    sendPort.send([resultPort.sendPort, data]);
+    final result = await resultPort.first;
+
+    // Update restaurants list
+    restaurants = List<Restaurant>.from(result);
+    notifyListeners();
+  }
+
+  static void _filterRestaurants(SendPort sendPort) async {
+    final receivePort = ReceivePort();
+    sendPort.send(receivePort.sendPort);
+
+    final data = await receivePort.first;
+    List<Restaurant> filteredRestaurants = data[1]
+        .where((r) => r.rating > 4.0) // Just an example filter
+        .toList();
+
+    sendPort.send(filteredRestaurants);
   }
 }
