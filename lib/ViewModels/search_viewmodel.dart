@@ -5,7 +5,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 import '../Services/connection_helper.dart';
-import 'dart:async';
 
 class SearchViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
@@ -48,9 +47,9 @@ class SearchViewModel extends ChangeNotifier {
 
   // ——— /FAVORITES ———
 
-  Future<void> searchRestaurants(String query, {int? type}) async {
+  Future<void> searchRestaurants(BuildContext context, query, {int? type}) async {
     if (query.isEmpty && type == null) {
-      return loadAllRestaurants();
+      return loadAllRestaurants(context);
     }
 
     isLoading = true;
@@ -70,7 +69,7 @@ class SearchViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> loadAllRestaurants() async {
+  Future<void> loadAllRestaurants(BuildContext context) async {
 
     isLoading = true;
     errorMessage = null;

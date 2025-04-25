@@ -14,7 +14,7 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => SearchViewModel()..loadAllRestaurants(),
+      create: (_) => SearchViewModel()..loadAllRestaurants(context),
       child: Consumer<SearchViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(
@@ -97,7 +97,7 @@ class SearchPage extends StatelessWidget {
                           const Text('Please check your connection and try again'),
                           const SizedBox(height: 16),
                           ElevatedButton(
-                            onPressed: () => viewModel.loadAllRestaurants(),
+                            onPressed: () => viewModel.loadAllRestaurants(context),
                             child: const Text('Retry'),
                           ),
                         ],
@@ -113,7 +113,7 @@ class SearchPage extends StatelessWidget {
                   else
                     Expanded(
                       child: RefreshIndicator(
-                        onRefresh: () => viewModel.loadAllRestaurants(),
+                        onRefresh: () => viewModel.loadAllRestaurants(context),
                         child: ListView.builder(
                           itemCount: viewModel.restaurants.length,
                           itemBuilder: (context, index) {
