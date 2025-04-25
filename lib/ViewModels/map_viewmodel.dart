@@ -22,7 +22,17 @@ class MapViewModel with ChangeNotifier {
 
   Restaurant? get selectedRestaurant => _selectedRestaurant;
 
+  void reset() {
+    _userLocation = null;
+    _restaurants = [];
+    _isLoading = true;
+    _error = null;
+    _selectedRestaurant = null;
+    notifyListeners();
+  }
+
   Future<void> initialize() async {
+    reset();
     await _getUserLocation();
     await _fetchRestaurants();
   }

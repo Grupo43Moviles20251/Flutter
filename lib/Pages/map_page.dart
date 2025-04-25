@@ -21,33 +21,46 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
   bool _isOnline = true;
+  late MapViewModel _viewModel = MapViewModel();
 
   @override
   void initState() {
     super.initState();
     _checkConnectivity();
+    _viewModel.reset();
+  }
+
+  @override
+  void dispose() {
+    mapController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkConnectivity() async {
     final connectivityResult = await ConnectivityService().isConnected();
-    setState(() {
-      _isOnline = connectivityResult ;
-    });
+    if (mounted) {
+      setState(() {
+        _isOnline = connectivityResult;
+      });
+    }
 
     // Listen to connectivity changes
     Connectivity().onConnectivityChanged.listen((result) {
-      setState(() {
-        _isOnline = result != ConnectivityResult.none;
-      });
+      if (mounted) {
+        setState(() {
+          _isOnline = result != ConnectivityResult.none;
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) =>
-      MapViewModel()
-        ..initialize(),
+      create: (_) {
+        _viewModel = MapViewModel()..initialize();
+        return _viewModel;
+      },
       child: Consumer<MapViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(

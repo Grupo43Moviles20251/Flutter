@@ -4,10 +4,15 @@ import 'package:first_app/Repositories/restaurant_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
+import '../Services/connection_helper.dart';
+import 'dart:async';
+
 class SearchViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
+  final ConnectivityService connectivityService = ConnectivityService();
   List<Restaurant> restaurants = [];
   bool isLoading = true;
+  bool isOffline = false;
   String? errorMessage;
 
   // ——— FAVORITES ———
@@ -54,7 +59,7 @@ class SearchViewModel extends ChangeNotifier {
     try {
       restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
 
-      // Emit the search results to the stream
+
       _searchStreamController.add(restaurants);
     } catch (e) {
       errorMessage = "Search failed";
@@ -66,10 +71,28 @@ class SearchViewModel extends ChangeNotifier {
   }
 
   Future<void> loadAllRestaurants() async {
+
     isLoading = true;
     errorMessage = null;
     notifyListeners();
 
+    final isConnected = await connectivityService.isConnected();
+    isOffline = !isConnected;
+
+    if (!isConnected) {
+      isLoading = false;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No internet connection. Try again when you\'re back online.'),
+              duration: Duration(seconds: 3),
+            ));
+        }
+            notifyListeners();
+        return;
+      }
+
+    
     try {
       restaurants = await _restaurantRepository.fetchRestaurants();
 
