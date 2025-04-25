@@ -12,4 +12,14 @@ class RestaurantDetailViewModel {
       return "Error";
     }
   }
+
+  Future<String?> sendOrderAnalitycs(int productId,String productName, int quantity) async {
+
+    try {
+      await _repository.sendOrderAnalytics(productId,productName, quantity);
+      return "Success";
+    } catch (e) {
+      return "Error";
+    }
+  }
 }

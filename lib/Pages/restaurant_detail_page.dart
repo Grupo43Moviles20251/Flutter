@@ -336,13 +336,14 @@ class RestaurantDetailPage extends StatelessWidget {
                       final orderCode = await viewModel.orderItem(
                           product.productId, selectedQuantity);
 
-                      // Close loading dialog
+
                       Navigator.of(scaffoldMessengerKey.currentContext!,
                           rootNavigator: true).pop();
 
                       if (orderCode == "Error") {
                         _showErrorDialog(scaffoldMessengerKey.currentContext!);
                       } else {
+                        await viewModel.sendOrderAnalitycs(product.productId, product.productName, selectedQuantity);
                         _showOrderConfirmationDialog(
                             scaffoldMessengerKey.currentContext!,
                             orderCode!

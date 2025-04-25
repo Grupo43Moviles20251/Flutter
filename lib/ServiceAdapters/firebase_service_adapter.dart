@@ -18,6 +18,10 @@ abstract class FirebaseServiceAdapter {
   Future<void> updateEmail(String newEmail);
   Future<String> uploadProfileImage( File imageFile);
   Future<void> updateUserData(Map<String, dynamic> userData);
+  
+  Future<void> sendOrderAnalytics(int productId,String nameProduct, int quantity);
+
+  
 
 }
 
@@ -106,6 +110,22 @@ class FirebaseServiceAdapterImpl implements FirebaseServiceAdapter{
   Future<void> updateUserData( Map<String, dynamic> userData) async {
     final user = _auth.currentUser;
     await _firestore.collection('users').doc(user?.uid).set(userData, SetOptions(merge: true));
+  }
+
+
+  @override
+  Future<void> sendOrderAnalytics(int productId, String nameProduct, int quantity) async {
+    try {
+      await FirebaseFirestore.instance.collection('product_orders').add({
+        'productId': productId,
+        'quantity': quantity,
+        'date': Timestamp.now(),
+        'nameProduct': nameProduct,
+      });
+
+    } catch (e) {
+      print("Error al guardar la orden: $e");
+    }
   }
 }
 
