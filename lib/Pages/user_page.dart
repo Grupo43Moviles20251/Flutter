@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+import 'dart:async';
 import 'package:first_app/Repositories/user_repository.dart';
 import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/ViewModels/user_viewmodel.dart';
@@ -7,9 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:first_app/Dtos/user_dto.dart';
+import '../Widgets/profile_image_widget.dart';
 import 'edit_profile_page.dart';
 import 'login_page.dart';
 import 'dart:convert';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class UserPage extends StatefulWidget {
   @override
@@ -20,21 +22,60 @@ class _UserPageState extends State<UserPage> {
   UserDTO? userData;
   bool isLoading = true;
   bool isOnline = true;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    _checkConnectivity();
+    _initConnectivityListener();
   }
 
-  Future<void> _checkConnectivity() async {
-    final connectivityResult = await ConnectivityService().isConnected();
-    if (mounted) {
-      setState(() {
-        isOnline = connectivityResult;
-      });
-    }
+  @override
+  void dispose() {
+    _connectivitySubscription.cancel();
+    super.dispose();
+  }
+
+  void _initConnectivityListener() {
+    // Check initial connectivity status
+    ConnectivityService().isConnected().then((connected) {
+      if (mounted) {
+        setState(() {
+          isOnline = connected;
+        });
+      }
+    });
+
+    // Listen for connectivity changes
+    _connectivitySubscription = ConnectivityService().connectivityStream.listen((results) async {
+      // When connectivity changes, verify if we actually have internet access
+      final connected = await ConnectivityService().isConnected();
+      if (mounted) {
+        setState(() {
+          isOnline = connected;
+        });
+
+        // Show a snackbar when connectivity changes
+        if (connected) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Internet connection restored'),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No internet connection'),
+              duration: Duration(seconds: 3),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    });
   }
 
   Future<void> _loadUserData() async {
@@ -66,29 +107,10 @@ class _UserPageState extends State<UserPage> {
               children: [
                 SizedBox(height: 40),
                 // Profile Avatar
-                CircleAvatar(
+                ProfileImageWithLRUCache(
+                  imageUrl: userData?.photoUrl,
                   radius: 60,
-                  backgroundColor: Colors.grey[200],
-                  child: userData?.photoUrl != null
-                      ? ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: userData!.photoUrl!,
-                      width: 120,
-                      height: 120,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => CircularProgressIndicator(),
-                      errorWidget: (context, url, error) => Icon(
-                        Icons.person,
-                        size: 60,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  )
-                      : Icon(
-                    Icons.person,
-                    size: 60,
-                    color: Colors.grey[600],
-                  ),
+                  isOnline: isOnline,
                 ),
                 SizedBox(height: 20),
 
@@ -127,7 +149,7 @@ class _UserPageState extends State<UserPage> {
                   ),
                 ),
                 SizedBox(height: 40),
-// En el build method de UserPage, añade este botón junto al de logout:
+                // En el build method de UserPage, añade este botón junto al de logout:
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
@@ -266,9 +288,8 @@ class _UserPageState extends State<UserPage> {
       MaterialPageRoute(
         builder: (context) => LoginPage(),
         settings: RouteSettings(name: "LoginPage"),
-
       ),
-        (route) => false,
+          (route) => false,
     );
   }
 }
