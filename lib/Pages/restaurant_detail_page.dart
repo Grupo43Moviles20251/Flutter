@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../ViewModels/restaurant_detail_viewmodel.dart';
 import 'home_page.dart';
 
@@ -13,230 +12,239 @@ class RestaurantDetailPage extends StatelessWidget {
   final bool isFavoritePage;
   final RestaurantDetailViewModel viewModel = RestaurantDetailViewModel();
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = GlobalKey();
-  
 
   RestaurantDetailPage({
     super.key,
     required this.restaurant,
     this.isFavoritePage = false,
   });
-  
+
+  Future<bool> _checkInternetAndShowMessage(BuildContext context) async {
+    final isConnected = await ConnectivityService().isConnected();
+    if (!isConnected && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No internet connection. Please try again when you have internet access.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+    return isConnected;
+  }
 
   @override
   Widget build(BuildContext context) {
     final product = restaurant.products[0];
-    return
-      ScaffoldMessenger(
-          key: scaffoldMessengerKey,
-          child: Scaffold(
-            body: CustomScrollView(
-              slivers: [
-                SliverAppBar(
-                  expandedHeight: 250.0,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: CachedNetworkImage(
-                      imageUrl: restaurant.imageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) =>
-                          Center(child: CircularProgressIndicator()),
-                      errorWidget: (context, url, error) => Icon(Icons.error),
-                    ),
-                  ),
-                  pinned: true,
+    return ScaffoldMessenger(
+      key: scaffoldMessengerKey,
+      child: Scaffold(
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 250.0,
+              flexibleSpace: FlexibleSpaceBar(
+                background: CachedNetworkImage(
+                  imageUrl: restaurant.imageUrl,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) =>
+                  const Center(child: CircularProgressIndicator()),
+                  errorWidget: (context, url, error) => const Icon(Icons.error),
                 ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
+              ),
+              pinned: true,
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with product name, price and rating
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header with product name, price and rating
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                restaurant.products[0].productName,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Row(
                                 children: [
                                   Text(
-                                    restaurant.products[0].productName,
+                                    "\$${restaurant.products[0].originalPrice}",
                                     style: TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
+                                      decoration: TextDecoration.lineThrough,
+                                      color: isFavoritePage
+                                          ? Colors.white70
+                                          : Colors.grey,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        "\$${restaurant.products[0]
-                                            .originalPrice}",
-                                        style: TextStyle(
-                                          decoration: TextDecoration
-                                              .lineThrough,
-                                          color: isFavoritePage
-                                              ? Colors.white70
-                                              : Colors.grey,
-                                        ),
-                                      ),
-                                      SizedBox(width: 5),
-                                      Text(
-                                        "\$${restaurant.products[0]
-                                            .discountPrice}",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 18,
-                                          color: isFavoritePage
-                                              ? Colors.white
-                                              : Color(0xFF2A9D8F),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.amber,
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.star, color: Colors.white,
-                                      size: 18),
-                                  SizedBox(width: 4),
+                                  const SizedBox(width: 5),
                                   Text(
-                                    restaurant.rating.toString(),
+                                    "\$${restaurant.products[0].discountPrice}",
                                     style: TextStyle(
-                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                      color: isFavoritePage
+                                          ? Colors.white
+                                          : const Color(0xFF2A9D8F),
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        SizedBox(height: 16),
-
-                        // Restaurant name (address)
-                        Row(
-                          children: [
-                            Icon(
-                                Icons.restaurant, size: 16, color: Colors.grey),
-                            SizedBox(width: 4),
-                            Text(
-                              restaurant.name,
-                              style: TextStyle(color: Colors.grey),
-                            ),
-                          ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star, color: Colors.white, size: 18),
+                              const SizedBox(width: 4),
+                              Text(
+                                restaurant.rating.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        SizedBox(height: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
-                        // Description
+                    // Restaurant name (address)
+                    Row(
+                      children: [
+                        const Icon(Icons.restaurant, size: 16, color: Colors.grey),
+                        const SizedBox(width: 4),
                         Text(
-                          restaurant.description,
-                          style: TextStyle(fontSize: 16),
+                          restaurant.name,
+                          style: const TextStyle(color: Colors.grey),
                         ),
-                        SizedBox(height: 24),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
 
-                        // Button Row - Add to Cart + Directions
-                        Row(
-                          children: [
-                            // Add to Cart Button (expanded to take available space)
-                            Expanded(
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFF2A9D8F),
-                                  padding: EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: () => _showOrderDialog(context),
-                                child: Text(
-                                  'Order',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 10), // Spacing between buttons
-                            // Directions Button (icon only)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
+                    // Description
+                    Text(
+                      restaurant.description,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Button Row - Add to Cart + Directions
+                    Row(
+                      children: [
+                        // Add to Cart Button (expanded to take available space)
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2A9D8F),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: IconButton(
-                                icon: Icon(
-                                    Icons.directions, color: Colors.white),
-                                padding: EdgeInsets.all(16),
-                                onPressed: () async {
-                                  await viewModel.logDirections(product.productId.toString());
-                                  final Uri directionsUri = Uri.parse(
-                                      'https://www.google.com/maps/dir/?api=1&destination='
-                                          '${restaurant.latitude},${restaurant
-                                          .longitude}&travelmode=driving'
-                                  );
-                                
-
-                                  if (await canLaunchUrl(directionsUri)) {
-                                    await launchUrl(directionsUri);
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text(
-                                            "Could not launch Google Maps")));
-                                  }
-                                },
-                              ),
                             ),
-                          ],
-                        ),
-                        SizedBox(height: 24),
-
-                        // Map
-                        SizedBox(
-                          height: 200,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: GoogleMap(
-                              initialCameraPosition: CameraPosition(
-                                target: LatLng(
-                                    restaurant.latitude, restaurant.longitude),
-                                zoom: 15,
+                            onPressed: () async {
+                              if (await _checkInternetAndShowMessage(context)) {
+                                _showOrderDialog(context);
+                              }
+                            },
+                            child: const Text(
+                              'Order',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
                               ),
-                              markers: {
-                                Marker(
-                                  markerId: MarkerId(restaurant.name),
-                                  position: LatLng(restaurant.latitude,
-                                      restaurant.longitude),
-                                  infoWindow: InfoWindow(
-                                      title: restaurant.name),
-                                  icon: BitmapDescriptor.defaultMarkerWithHue(
-                                      BitmapDescriptor.hueRed),
-                                ),
-                              },
-                              zoomGesturesEnabled: true,
-                              scrollGesturesEnabled: true,
-                              myLocationEnabled: true,
                             ),
                           ),
                         ),
-                        SizedBox(height: 24),
+                        const SizedBox(width: 10), // Spacing between buttons
+                        // Directions Button (icon only)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.directions, color: Colors.white),
+                            padding: const EdgeInsets.all(16),
+                            onPressed: () async {
+                              if (await _checkInternetAndShowMessage(context)) {
+                                await viewModel.logDirections(product.productId.toString());
+                                final Uri directionsUri = Uri.parse(
+                                    'https://www.google.com/maps/dir/?api=1&destination='
+                                        '${restaurant.latitude},${restaurant.longitude}&travelmode=driving'
+                                );
+
+                                if (await canLaunchUrl(directionsUri)) {
+                                  await launchUrl(directionsUri);
+                                } else if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text(
+                                          "Could not launch Google Maps")));
+                                }
+                              }
+                            },
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 24),
+
+                    // Map
+                    SizedBox(
+                      height: 200,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: GoogleMap(
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(
+                                restaurant.latitude, restaurant.longitude),
+                            zoom: 15,
+                          ),
+                          markers: {
+                            Marker(
+                              markerId: MarkerId(restaurant.name),
+                              position: LatLng(restaurant.latitude,
+                                  restaurant.longitude),
+                              infoWindow: InfoWindow(
+                                  title: restaurant.name),
+                              icon: BitmapDescriptor.defaultMarkerWithHue(
+                                  BitmapDescriptor.hueRed),
+                            ),
+                          },
+                          zoomGesturesEnabled: true,
+                          scrollGesturesEnabled: true,
+                          myLocationEnabled: true,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ));
+          ],
+        ),
+      ),
+    );
   }
 
   void _showOrderDialog(BuildContext context) {
@@ -249,17 +257,17 @@ class RestaurantDetailPage extends StatelessWidget {
         return StatefulBuilder(
           builder: (dialogContext, setState) {
             return AlertDialog(
-              title: Text('Select Quantity'),
+              title: const Text('Select Quantity'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('${product.productName}'),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.remove),
+                        icon: const Icon(Icons.remove),
                         onPressed: selectedQuantity > 1
                             ? () {
                           setState(() {
@@ -268,14 +276,14 @@ class RestaurantDetailPage extends StatelessWidget {
                         }
                             : null,
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Text(
                         '$selectedQuantity',
-                        style: TextStyle(fontSize: 20),
+                        style: const TextStyle(fontSize: 20),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       IconButton(
-                        icon: Icon(Icons.add),
+                        icon: const Icon(Icons.add),
                         onPressed: selectedQuantity < product.amount
                             ? () {
                           setState(() {
@@ -286,17 +294,17 @@ class RestaurantDetailPage extends StatelessWidget {
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(
                     'Max available: ${product.amount}',
-                    style: TextStyle(color: Colors.grey),
+                    style: const TextStyle(color: Colors.grey),
                   ),
                 ],
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text('Cancel'),
+                  child: const Text('Cancel'),
                 ),
                 ElevatedButton(
                   onPressed: () async {
@@ -312,11 +320,11 @@ class RestaurantDetailPage extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              CircularProgressIndicator(
+                              const CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(
                                       Color(0xFF2A9D8F))),
-                              SizedBox(height: 20),
-                              Text(
+                              const SizedBox(height: 20),
+                              const Text(
                                 'Processing your order...',
                                 style: TextStyle(color: Colors.white),
                               ),
@@ -327,20 +335,23 @@ class RestaurantDetailPage extends StatelessWidget {
                     );
 
                     try {
-            final isConnected = await ConnectivityService().isConnected();
-            if(!isConnected){
-            if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-            content: Text('No internet connection. Try again order when you\'re back online.'),
-            duration: Duration(seconds: 3),
-            ),
-            );
-            }
-            return ;}
+                      final isConnected = await ConnectivityService().isConnected();
+                      if (!isConnected) {
+                        if (scaffoldMessengerKey.currentContext != null && scaffoldMessengerKey.currentContext!.mounted) {
+                          Navigator.of(scaffoldMessengerKey.currentContext!, rootNavigator: true).pop();
+                          ScaffoldMessenger.of(scaffoldMessengerKey.currentContext!).showSnackBar(
+                            const SnackBar(
+                              content: Text('No internet connection. Please try again when you have internet access.'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+
                       final orderCode = await viewModel.orderItem(
                           product.productId, selectedQuantity);
-                     
+
                       Navigator.of(scaffoldMessengerKey.currentContext!,
                           rootNavigator: true).pop();
 
@@ -355,15 +366,17 @@ class RestaurantDetailPage extends StatelessWidget {
                       }
                     } catch (e) {
                       // Close loading dialog in case of error
-                      Navigator.of(scaffoldMessengerKey.currentContext!,
-                          rootNavigator: true).pop();
-                      _showErrorDialog(
-                          scaffoldMessengerKey.currentContext!,
-                          errorMessage: 'Error: ${e.toString()}'
-                      );
+                      if (scaffoldMessengerKey.currentContext != null && scaffoldMessengerKey.currentContext!.mounted) {
+                        Navigator.of(scaffoldMessengerKey.currentContext!,
+                            rootNavigator: true).pop();
+                        _showErrorDialog(
+                            scaffoldMessengerKey.currentContext!,
+                            errorMessage: 'Error: ${e.toString()}'
+                        );
+                      }
                     }
                   },
-                  child: Text('Order'),
+                  child: const Text('Order'),
                 ),
               ],
             );
@@ -379,32 +392,32 @@ class RestaurantDetailPage extends StatelessWidget {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Order Confirmation'),
+          title: const Text('Order Confirmation'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 60),
-              SizedBox(height: 20),
-              Text(
+              const Icon(Icons.check_circle, color: Colors.green, size: 60),
+              const SizedBox(height: 20),
+              const Text(
                 'Your order has been placed successfully!',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16),
               ),
-              SizedBox(height: 20),
-              Text(
+              const SizedBox(height: 20),
+              const Text(
                 'Order Code:',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Container(
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   orderCode,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 2.0,
@@ -412,8 +425,8 @@ class RestaurantDetailPage extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 10),
-              Text(
+              const SizedBox(height: 10),
+              const Text(
                 'Please save this code for reference',
                 style: TextStyle(color: Colors.grey, fontSize: 12),
               ),
@@ -427,11 +440,11 @@ class RestaurantDetailPage extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                       builder: (context) => HomePage(selectedIndex: 0),
-                      settings: RouteSettings(name: "HomePage")
+                      settings: const RouteSettings(name: "HomePage")
                   ),
                 );
               },
-              child: Text('OK', style: TextStyle(color: Color(0xFF2A9D8F))),
+              child: const Text('OK', style: TextStyle(color: Color(0xFF2A9D8F))),
             ),
           ],
         );
@@ -445,23 +458,23 @@ class RestaurantDetailPage extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Order Failed'),
+          title: const Text('Order Failed'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 60),
-              SizedBox(height: 20),
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 20),
               Text(
                 errorMessage,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16),
+                style: const TextStyle(fontSize: 16),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('OK', style: TextStyle(color: Color(0xFF2A9D8F))),
+              child: const Text('OK', style: TextStyle(color: Color(0xFF2A9D8F))),
             ),
           ],
         );
