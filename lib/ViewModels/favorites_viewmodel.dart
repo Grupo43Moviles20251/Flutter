@@ -19,7 +19,7 @@ class FavoritesViewModel extends ChangeNotifier {
   static Database? _database;
 
   FavoritesViewModel() {
-    _initDatabase().then((_) => _fetchFavorites());
+    _initDatabase().then((_) => fetchFavorites());
   }
 
   // Initialize database
@@ -68,11 +68,11 @@ class FavoritesViewModel extends ChangeNotifier {
       );
     }
 
-    await _fetchFavorites();
+    await fetchFavorites();
   }
 
   // Fetch all favorite restaurants
-  Future<void> _fetchFavorites() async {
+  Future<void> fetchFavorites() async {
     isLoading = true;
     notifyListeners();
 
