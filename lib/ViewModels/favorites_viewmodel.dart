@@ -1,55 +1,91 @@
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Repositories/restaurant_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'dart:async';
 
 class FavoritesViewModel extends ChangeNotifier {
-  static const _prefsKey = 'favorite_names';
-
   final RestaurantRepository _repo = RestaurantRepository();
   List<Restaurant> favorites = [];
   bool isLoading = true;
-  Set<String> _favNames = {};
 
   // Stream for favorites
-  final StreamController<List<Restaurant>> _favoritesStreamController = StreamController<List<Restaurant>>.broadcast();
+  final StreamController<List<Restaurant>> _favoritesStreamController =
+  StreamController<List<Restaurant>>.broadcast();
   Stream<List<Restaurant>> get favoritesStream => _favoritesStreamController.stream;
 
+  // Database instance
+  static Database? _database;
+
   FavoritesViewModel() {
-    _init();
+    _initDatabase().then((_) => _fetchFavorites());
   }
 
-  Future<void> _init() async {
-    await _loadFavNames();
-    await _fetchFavorites();
+  // Initialize database
+  Future<void> _initDatabase() async {
+    _database = await openDatabase(
+      join(await getDatabasesPath(), 'favorites_database.db'),
+      onCreate: (db, version) {
+        return db.execute(
+          'CREATE TABLE favorites(id INTEGER PRIMARY KEY, name TEXT UNIQUE)',
+        );
+      },
+      version: 1,
+    );
   }
 
-  Future<void> _loadFavNames() async {
-    final prefs = await SharedPreferences.getInstance();
-    _favNames = (prefs.getStringList(_prefsKey) ?? []).toSet();
+  // Check if a restaurant is favorite
+  Future<bool> isFavorite(Restaurant r) async {
+    if (_database == null) await _initDatabase();
+
+    final List<Map<String, dynamic>> maps = await _database!.query(
+      'favorites',
+      where: 'name = ?',
+      whereArgs: [r.name],
+    );
+
+    return maps.isNotEmpty;
   }
 
-  bool isFavorite(Restaurant r) => _favNames.contains(r.name);
-
+  // Toggle favorite status
   Future<void> toggleFavorite(Restaurant r) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_favNames.contains(r.name)) {
-      _favNames.remove(r.name);
+    if (_database == null) await _initDatabase();
+
+    final isFav = await isFavorite(r);
+
+    if (isFav) {
+      await _database!.delete(
+        'favorites',
+        where: 'name = ?',
+        whereArgs: [r.name],
+      );
     } else {
-      _favNames.add(r.name);
+      await _database!.insert(
+        'favorites',
+        {'name': r.name},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
-    await prefs.setStringList(_prefsKey, _favNames.toList());
+
     await _fetchFavorites();
   }
 
+  // Fetch all favorite restaurants
   Future<void> _fetchFavorites() async {
     isLoading = true;
     notifyListeners();
 
     try {
+      if (_database == null) await _initDatabase();
+
+      // Get all favorite names from database
+      final List<Map<String, dynamic>> favMaps = await _database!.query('favorites');
+      final Set<String> favNames = favMaps.map((map) => map['name'] as String).toSet();
+
+      // Get all restaurants and filter favorites
       final all = await _repo.fetchRestaurants();
-      favorites = all.where((r) => _favNames.contains(r.name)).toList();
+      favorites = all.where((r) => favNames.contains(r.name)).toList();
 
       // Emit updated favorites to the stream
       _favoritesStreamController.add(favorites);
@@ -60,5 +96,11 @@ class FavoritesViewModel extends ChangeNotifier {
 
     isLoading = false;
     notifyListeners();
+  }
+
+  // Close the database when done
+  Future<void> close() async {
+    await _database?.close();
+    await _favoritesStreamController.close();
   }
 }

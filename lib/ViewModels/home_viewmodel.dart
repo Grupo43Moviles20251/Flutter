@@ -2,15 +2,17 @@ import 'package:first_app/Repositories/restaurant_repository.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Services/connection_helper.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert'; // For JSON serialization
 import 'dart:async'; // For Isolate and async operations
-import 'dart:isolate'; // For Isolate usage
+import 'dart:isolate';
+
+import 'package:sqflite/sqflite.dart'; // For Isolate usage
 
 class HomeViewModel extends ChangeNotifier {
   final RestaurantRepository _restaurantRepository = RestaurantRepository();
   final ConnectivityService connectivityService = ConnectivityService();
-  static const _prefsKey = 'favorite_names';
   static const _cacheKey = 'restaurants_cache';
   static const _cacheDurationKey = 'restaurants_cache_timestamp';
   static const _cacheDuration = Duration(hours: 1); // Cache expires after 1 hour
@@ -19,6 +21,7 @@ class HomeViewModel extends ChangeNotifier {
   List<Restaurant> restaurants = [];
   bool isLoading = true;
   bool isOffline = false;
+  static Database? _database;
 
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
 
@@ -26,25 +29,54 @@ class HomeViewModel extends ChangeNotifier {
   Stream<List<Restaurant>> get restaurantsStream => _restaurantsStreamController.stream;
 
   HomeViewModel() {
-    _loadFavorites();
+    _initDatabaseConnection().then((_) => _loadFavorites());
   }
 
+  Future<void> _initDatabaseConnection() async {
+    _database ??= await openDatabase(
+        join(await getDatabasesPath(), 'favorites_database.db'),
+        version: 1,
+        // No necesitamos onCreate porque la tabla ya existe
+      );
+  }
+
+  // Cargar favoritos desde la tabla existente
   Future<void> _loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    final favs = prefs.getStringList(_prefsKey) ?? [];
-    _favorites = favs.toSet();
-    notifyListeners();
+    if (_database == null) await _initDatabaseConnection();
+
+    try {
+      final List<Map<String, dynamic>> maps = await _database!.query('favorites');
+      _favorites = maps.map((map) => map['name'] as String).toSet();
+      notifyListeners();
+    } catch (e) {
+      print("Error cargando favoritos: $e");
+      _favorites = {};
+    }
   }
 
   Future<void> toggleFavorite(Restaurant r) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_favorites.contains(r.name)) {
-      _favorites.remove(r.name);
-    } else {
-      _favorites.add(r.name);
+    if (_database == null) await _initDatabaseConnection();
+
+    try {
+      if (_favorites.contains(r.name)) {
+        _favorites.remove(r.name);
+        await _database!.delete(
+          'favorites',
+          where: 'name = ?',
+          whereArgs: [r.name],
+        );
+      } else {
+        _favorites.add(r.name);
+        await _database!.insert(
+          'favorites',
+          {'name': r.name},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error actualizando favorito: $e");
     }
-    await prefs.setStringList(_prefsKey, _favorites.toList());
-    notifyListeners();
   }
 
   Future<void> loadRestaurants() async {
@@ -130,5 +162,9 @@ class HomeViewModel extends ChangeNotifier {
         .toList();
 
     sendPort.send(filteredRestaurants);
+  }
+
+  Future<void> close() async {
+    await _restaurantsStreamController.close();
   }
 }

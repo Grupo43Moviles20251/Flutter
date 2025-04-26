@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Repositories/restaurant_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import 'dart:async';
-
 import '../Services/connection_helper.dart';
 
 class SearchViewModel extends ChangeNotifier {
@@ -15,34 +15,65 @@ class SearchViewModel extends ChangeNotifier {
   String? errorMessage;
 
   // ——— FAVORITES ———
-  static const _prefsKey = 'favorite_names';
   Set<String> _favorites = {};
+  static Database? _database; // Misma instancia de base de datos
 
   // ——— STREAM ———
-  final StreamController<List<Restaurant>> _searchStreamController = StreamController<List<Restaurant>>.broadcast();
+  final StreamController<List<Restaurant>> _searchStreamController =
+  StreamController<List<Restaurant>>.broadcast();
   Stream<List<Restaurant>> get searchStream => _searchStreamController.stream;
 
   SearchViewModel() {
-    _loadFavorites();
+    _initDatabaseConnection().then((_) => _loadFavorites());
+  }
+
+  // Conectar a la base de datos existente
+  Future<void> _initDatabaseConnection() async {
+    _database ??= await openDatabase(
+        join(await getDatabasesPath(), 'favorites_database.db'),
+        version: 1,
+        // No necesitamos onCreate porque la tabla ya existe
+      );
   }
 
   Future<void> _loadFavorites() async {
-    final prefs = await SharedPreferences.getInstance();
-    _favorites = (prefs.getStringList(_prefsKey) ?? []).toSet();
-    notifyListeners();
+    if (_database == null) await _initDatabaseConnection();
+
+    try {
+      final List<Map<String, dynamic>> maps = await _database!.query('favorites');
+      _favorites = maps.map((map) => map['name'] as String).toSet();
+      notifyListeners();
+    } catch (e) {
+      print("Error cargando favoritos: $e");
+      _favorites = {};
+    }
   }
 
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
 
   Future<void> toggleFavorite(Restaurant r) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (_favorites.contains(r.name)) {
-      _favorites.remove(r.name);
-    } else {
-      _favorites.add(r.name);
+    if (_database == null) await _initDatabaseConnection();
+
+    try {
+      if (_favorites.contains(r.name)) {
+        _favorites.remove(r.name);
+        await _database!.delete(
+          'favorites',
+          where: 'name = ?',
+          whereArgs: [r.name],
+        );
+      } else {
+        _favorites.add(r.name);
+        await _database!.insert(
+          'favorites',
+          {'name': r.name},
+          conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+      }
+      notifyListeners();
+    } catch (e) {
+      print("Error actualizando favorito: $e");
     }
-    await prefs.setStringList(_prefsKey, _favorites.toList());
-    notifyListeners();
   }
 
   // ——— /FAVORITES ———
@@ -57,8 +88,6 @@ class SearchViewModel extends ChangeNotifier {
 
     try {
       restaurants = await _restaurantRepository.searchRestaurants(query, type: type);
-
-
       _searchStreamController.add(restaurants);
     } catch (e) {
       errorMessage = "Search failed";
@@ -70,7 +99,6 @@ class SearchViewModel extends ChangeNotifier {
   }
 
   Future<void> loadAllRestaurants(BuildContext context) async {
-
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -86,16 +114,13 @@ class SearchViewModel extends ChangeNotifier {
               content: Text('No internet connection. Try again when you\'re back online.'),
               duration: Duration(seconds: 3),
             ));
-        }
-            notifyListeners();
-        return;
       }
+      notifyListeners();
+      return;
+    }
 
-    
     try {
       restaurants = await _restaurantRepository.fetchRestaurants();
-
-      // Emit the full list of restaurants to the stream
       _searchStreamController.add(restaurants);
     } catch (e) {
       errorMessage = "Failed to load restaurants";
@@ -104,5 +129,10 @@ class SearchViewModel extends ChangeNotifier {
       isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> close() async {
+    // No cerramos la base de datos aquí para no afectar a otros ViewModels
+    await _searchStreamController.close();
   }
 }
