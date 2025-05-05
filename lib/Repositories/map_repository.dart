@@ -8,7 +8,7 @@ abstract class MapRepository {
 }
 
 class mapRepository implements MapRepository {
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://192.168.20.48:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://157.253.122.228:8000', client: http.Client());
 
   @override
   Future<List<Restaurant>> fetchRestaurants() async {

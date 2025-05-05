@@ -1,11 +1,10 @@
 import 'package:first_app/Pages/restaurant_detail_page.dart';
-import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:connectivity_plus/connectivity_plus.dart'; // Add this import
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../Models/restaurant_model.dart';
 import '../ViewModels/map_viewmodel.dart';
@@ -20,14 +19,66 @@ class MapPage extends StatefulWidget {
 
 class _MapPageState extends State<MapPage> {
   late GoogleMapController mapController;
-  bool _isOnline = true;
-  late MapViewModel _viewModel = MapViewModel();
+  late MapViewModel _viewModel;
+  ConnectivityResult _connectionStatus = ConnectivityResult.none;
+  late Connectivity _connectivity;
+  bool _initialLoadComplete = false;
+  bool _shouldCenterOnUser = true;
 
   @override
   void initState() {
     super.initState();
-    _checkConnectivity();
-    _viewModel.reset();
+    _viewModel = MapViewModel();
+    _connectivity = Connectivity();
+    _initConnectivity();
+
+    _connectivity.onConnectivityChanged.listen(_updateConnectionStatus);
+    _loadData();
+  }
+
+  Future<void> _initConnectivity() async {
+    late List<ConnectivityResult> result;
+    try {
+      result = await _connectivity.checkConnectivity();
+    } catch (e) {
+      debugPrint('Could not check connectivity status: $e');
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _connectionStatus = result.isNotEmpty ? result.first : ConnectivityResult.none;
+    });
+  }
+
+  Future<void> _updateConnectionStatus(List<ConnectivityResult> results) async {
+    final newStatus = results.isNotEmpty ? results.first : ConnectivityResult.none;
+    final wasOffline = _connectionStatus == ConnectivityResult.none;
+    final isNowOnline = newStatus != ConnectivityResult.none;
+
+    setState(() {
+      _connectionStatus = newStatus;
+    });
+
+    if (wasOffline && isNowOnline) {
+      // Cuando volvemos a tener conexión
+      setState(() {
+        _shouldCenterOnUser = true; // Indicar que debemos centrar en el usuario
+      });
+      await _loadData();
+    }
+  }
+  Future<void> _loadData() async {
+    try {
+      await _viewModel.initialize();
+      if (mounted) {
+        setState(() {
+          _initialLoadComplete = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading map data: $e');
+    }
   }
 
   @override
@@ -36,39 +87,21 @@ class _MapPageState extends State<MapPage> {
     super.dispose();
   }
 
-  Future<void> _checkConnectivity() async {
-    final connectivityResult = await ConnectivityService().isConnected();
-    if (mounted) {
-      setState(() {
-        _isOnline = connectivityResult;
-      });
-    }
-
-    // Listen to connectivity changes
-    Connectivity().onConnectivityChanged.listen((result) {
-      if (mounted) {
-        setState(() {
-          _isOnline = result != ConnectivityResult.none;
-        });
-      }
-    });
-  }
+  bool get _isOnline => _connectionStatus != ConnectivityResult.none;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) {
-        _viewModel = MapViewModel()..initialize();
-        return _viewModel;
-      },
+      create: (_) => _viewModel,
       child: Consumer<MapViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(
             body: Stack(
               children: [
                 if (!_isOnline) _buildOfflineMessage(),
-                if (_isOnline) _buildMap(context, viewModel),
-                if (viewModel.selectedRestaurant != null && _isOnline)
+                if (_isOnline && _initialLoadComplete) _buildMap(context, viewModel),
+                if (_isOnline && !_initialLoadComplete) _buildLoadingIndicator(),
+                if (viewModel.selectedRestaurant != null && _isOnline && _initialLoadComplete)
                   _buildRestaurantInfo(context, viewModel.selectedRestaurant!),
               ],
             ),
@@ -76,6 +109,12 @@ class _MapPageState extends State<MapPage> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildLoadingIndicator() {
+    return const Center(
+      child: CircularProgressIndicator(),
     );
   }
 
@@ -101,7 +140,7 @@ class _MapPageState extends State<MapPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: _checkConnectivity,
+              onPressed: _initConnectivity,
               child: const Text('Retry Connection'),
             ),
           ],
@@ -111,16 +150,27 @@ class _MapPageState extends State<MapPage> {
   }
 
   Widget _buildMap(BuildContext context, MapViewModel viewModel) {
-    if (viewModel.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     if (viewModel.error != null) {
-      return Center(child: Text(viewModel.error!));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(viewModel.error!),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
     }
 
     return GoogleMap(
-      onMapCreated: (controller) => mapController = controller,
+      onMapCreated: (controller) {
+        mapController = controller;
+        _centerMapOnUser(viewModel.userLocation);
+      },
       initialCameraPosition: CameraPosition(
         target: viewModel.userLocation ?? const LatLng(4.710989, -74.072092),
         zoom: 16,
@@ -132,8 +182,26 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-// ... [keep all your existing methods below unchanged]
+  void _centerMapOnUser(LatLng? userLocation) {
+    if (userLocation != null && _shouldCenterOnUser) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        mapController.animateCamera(
+          CameraUpdate.newLatLng(userLocation),
+        );
+        setState(() {
+          _shouldCenterOnUser = false; // Ya hemos centrado el mapa
+        });
+      });
+    }
+  }
 
+  @override
+  void didUpdateWidget(MapPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_connectionStatus != ConnectivityResult.none && _initialLoadComplete) {
+      _centerMapOnUser(_viewModel.userLocation);
+    }
+  }
 
   Future<void> _navigateToRestaurant(double lat, double lng) async {
     final Uri url = Uri.parse(
@@ -145,12 +213,9 @@ class _MapPageState extends State<MapPage> {
     }
   }
 
-
   Widget _buildRestaurantInfo(BuildContext context, Restaurant restaurant) {
-    // Calcular el precio promedio de los productos
     double averagePrice = restaurant.products.isNotEmpty
-        ? restaurant.products.map((p) => p.discountPrice).reduce((a, b) =>
-    a + b) /
+        ? restaurant.products.map((p) => p.discountPrice).reduce((a, b) => a + b) /
         restaurant.products.length
         : 0;
 
@@ -174,7 +239,6 @@ class _MapPageState extends State<MapPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen del restaurante
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
@@ -182,10 +246,14 @@ class _MapPageState extends State<MapPage> {
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 150,
+                  color: Colors.grey[200],
+                  child: const Icon(Icons.restaurant, size: 50, color: Colors.grey),
+                ),
               ),
             ),
             const SizedBox(height: 12),
-            // Nombre del restaurante
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -205,34 +273,34 @@ class _MapPageState extends State<MapPage> {
               ),
             ),
             const SizedBox(height: 8),
-            // Dirección
             Row(
               children: [
                 const Icon(Icons.location_on, size: 16, color: Colors.grey),
                 const SizedBox(width: 4),
-                Text(
-                  restaurant.address,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+                Expanded(
+                  child: Text(
+                    restaurant.address,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
-            // Descripción
             Text(
               restaurant.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black54,
               ),
             ),
             const SizedBox(height: 8),
-            // Rating y precio promedio
             Row(
               children: [
-                // Rating
                 const Icon(Icons.star, size: 16, color: Colors.amber),
                 const SizedBox(width: 4),
                 Text(
@@ -243,11 +311,10 @@ class _MapPageState extends State<MapPage> {
                   ),
                 ),
                 const SizedBox(width: 16),
-
                 const Icon(Icons.attach_money, size: 16, color: Colors.green),
                 const SizedBox(width: 4),
                 Text(
-                  "Average Price: \$${averagePrice.toStringAsFixed(2)}",
+                  "Average: \$${averagePrice.toStringAsFixed(2)}",
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -256,19 +323,16 @@ class _MapPageState extends State<MapPage> {
               ],
             ),
             const SizedBox(height: 16),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              // Distribuye el espacio uniformemente
               children: [
-                // Botón para obtener direcciones
                 ElevatedButton(
                   onPressed: () {
                     _navigateToRestaurant(
                         restaurant.latitude, restaurant.longitude);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFF38677A),
+                    backgroundColor: const Color(0xFF38677A),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(
@@ -284,7 +348,6 @@ class _MapPageState extends State<MapPage> {
                     ),
                   ),
                 ),
-
               ],
             )
           ],
