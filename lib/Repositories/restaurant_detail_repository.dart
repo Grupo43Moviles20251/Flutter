@@ -11,7 +11,7 @@ abstract class RestaurantDetailRepository {
 }
 
 class restaurantDetailRepository implements RestaurantDetailRepository{
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://192.168.20.48:8000', client: http.Client());
    final FirebaseServiceAdapter firebaseServiceAdapter = FirebaseServiceAdapterImpl();
   @override
   Future<String?> orderItem(int itemId, int quantity) {

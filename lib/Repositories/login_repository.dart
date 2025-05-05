@@ -18,7 +18,7 @@ abstract class LoginRepository{
 class AuthRepository implements LoginRepository {
 
   final FirebaseServiceAdapter firebaseServiceAdapter =  FirebaseServiceAdapterImpl();
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://192.168.20.48:8000', client: http.Client());
 
 
   @override
