@@ -11,7 +11,7 @@ abstract class SignUpRepository{
 
 class SignRepository implements SignUpRepository {
 
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://157.253.122.228:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
 
   @override
   Future<String> signUp(String name, String email, String password, String address, String birthday, BuildContext context) async {
