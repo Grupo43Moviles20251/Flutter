@@ -24,6 +24,9 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isObscure = false;
   DateTime? _selectedDate;
 
+  final int _minAge = 13;
+  final int _maxAge = 120;
+
   // Define your limits here
   final int _nameMaxLength = 20;
   final int _emailMaxLength = 50;
@@ -32,11 +35,19 @@ class _SignUpPageState extends State<SignUpPage> {
   final int _addressMaxLength = 100;
 
   Future<void> _selectDate(BuildContext context) async {
+    final DateTime now = DateTime.now();
+    final DateTime initialDate = _selectedDate ?? now.subtract(Duration(days: _minAge * 365));
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      initialDate: initialDate,
+      firstDate: now.subtract(Duration(days: _maxAge * 365)),
+      lastDate: now.subtract(Duration(days: _minAge * 365)),
+      helpText: 'Select your birthday',
+      errorFormatText: 'Enter valid date',
+      errorInvalidText: 'Enter date in valid range',
+      fieldLabelText: 'Birthday',
+      fieldHintText: 'Month/Day/Year',
     );
 
     if (picked != null && picked != _selectedDate) {
@@ -199,9 +210,26 @@ class _SignUpPageState extends State<SignUpPage> {
                       TextFormField(
                         controller: _birthdayController,
                         validator: (value) {
-                          if (value == null || value == "") {
-                            return "Enter a valid date";
+                          if (value == null || value.isEmpty) {
+                            return "Please select your birthday";
                           }
+
+                          if (_selectedDate == null) {
+                            return "Invalid date selected";
+                          }
+
+                          final DateTime now = DateTime.now();
+                          final DateTime minDate = DateTime(now.year - _maxAge, now.month, now.day);
+                          final DateTime maxDate = DateTime(now.year - _minAge, now.month, now.day);
+
+                          if (_selectedDate!.isBefore(minDate)) {
+                            return "You must be younger than $_maxAge years";
+                          }
+
+                          if (_selectedDate!.isAfter(maxDate)) {
+                            return "You must be at least $_minAge years old";
+                          }
+
                           return null;
                         },
                         decoration: InputDecoration(
@@ -213,11 +241,11 @@ class _SignUpPageState extends State<SignUpPage> {
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(color: Color(0xFF38677A), width: 2.5),
                           ),
+                          suffixIcon: Icon(Icons.calendar_today, color: Color(0xFF38677A)),
+                          hintText: 'YYYY-MM-DD',
                         ),
                         readOnly: true,
-                        onTap: () {
-                          _selectDate(context);
-                        },
+                        onTap: () => _selectDate(context),
                       ),
                     ]
                 ),
