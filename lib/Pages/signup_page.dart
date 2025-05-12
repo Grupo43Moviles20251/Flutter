@@ -58,7 +58,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
   }
 
-  final SignUpViewmodel _viewModel = SignUpViewmodel(SignRepository(), ConnectivityService());
+  final SignUpViewModel _viewModel = SignUpViewModel(SignUpRepositoryImpl(), ConnectivityService());
 
   @override
   Widget build(BuildContext context) {

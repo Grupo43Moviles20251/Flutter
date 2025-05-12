@@ -37,6 +37,7 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       },
     ).timeout(const Duration(seconds: 10));
 
+
     if (response.statusCode == 200) {
       return UserDTO.fromJson(json.decode(response.body));
     } else {
