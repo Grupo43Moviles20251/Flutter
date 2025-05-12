@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/Repositories/restaurant_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'dart:async';
@@ -83,8 +86,16 @@ class FavoritesViewModel extends ChangeNotifier {
       final List<Map<String, dynamic>> favMaps = await _database!.query('favorites');
       final Set<String> favNames = favMaps.map((map) => map['name'] as String).toSet();
 
-      // Get all restaurants and filter favorites
-      final all = await _repo.fetchRestaurants();
+      final prefs = await SharedPreferences.getInstance();
+      final cachedData = prefs.getString('restaurants_cache');
+
+       List<Restaurant> all = [];
+      if (cachedData != null ) {
+        final List<dynamic> jsonData = json.decode(cachedData);
+        all = jsonData.map((json) => Restaurant.fromJson(json)).toList();
+      } else {
+        all = [];
+      }
       favorites = all.where((r) => favNames.contains(r.name)).toList();
 
       // Emit updated favorites to the stream

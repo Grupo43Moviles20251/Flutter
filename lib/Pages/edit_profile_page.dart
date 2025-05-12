@@ -1,12 +1,10 @@
-// edit_profile_page.dart
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:first_app/Dtos/user_dto.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:image_picker/image_picker.dart';
-
 import '../ViewModels/user_viewmodel.dart';
+import '../Services/connection_helper.dart'; // Asegúrate de importar tu servicio de conectividad
 
 class EditProfilePage extends StatefulWidget {
   final UserDTO userData;
@@ -31,6 +29,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   File? _imageFile;
   bool _isLoading = false;
   String? _imageUrl;
+  bool _hasInternetConnection = true;
+  late ConnectivityService _connectivityService;
 
   @override
   void initState() {
@@ -40,6 +40,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _addressController = TextEditingController(text: widget.userData.address ?? '');
     _birthdayController = TextEditingController(text: widget.userData.birthday ?? '');
     _imageUrl = widget.userData.photoUrl;
+    _connectivityService = ConnectivityService();
+
+    // Verificar conexión al iniciar
+    _checkInternetConnection();
+
+    // Escuchar cambios en la conexión
+    _connectivityService.connectivityStream.listen((result) {
+      _checkInternetConnection();
+    });
+  }
+
+  Future<void> _checkInternetConnection() async {
+    final isConnected = await _connectivityService.isConnected();
+    if (mounted) {
+      setState(() {
+        _hasInternetConnection = isConnected;
+      });
+    }
   }
 
   @override
@@ -52,6 +70,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _pickImage() async {
+    if (!_hasInternetConnection) {
+      _showNoInternetMessage();
+      return;
+    }
+
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
@@ -62,20 +85,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  void _showNoInternetMessage() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No hay conexión a internet. Conéctate para realizar esta acción.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   Future<void> _saveProfile() async {
+    if (!_hasInternetConnection) {
+      _showNoInternetMessage();
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });
 
-
     try {
-
       final updatedUser = await widget.viewModel.updateProfile(
-        name: _nameController.text,
-        email: _emailController.text,
-        address: _addressController.text.isNotEmpty ? _addressController.text : null,
-        birthday: _birthdayController.text.isNotEmpty ? _birthdayController.text : null,
-        profileImage: _imageFile,
+          name: _nameController.text,
+          email: _emailController.text,
+          address: _addressController.text.isNotEmpty ? _addressController.text : null,
+          birthday: _birthdayController.text.isNotEmpty ? _birthdayController.text : null,
+          profileImage: _imageFile,
           existingImageUrl: _imageUrl
       );
 
@@ -149,21 +184,40 @@ class _EditProfilePageState extends State<EditProfilePage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _saveProfile,
+                  onPressed: (_isLoading || !_hasInternetConnection)
+                      ? null
+                      : _saveProfile,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2A9D8F),
+                    backgroundColor: _hasInternetConnection
+                        ? const Color(0xFF2A9D8F)
+                        : Colors.grey, // Cambia el color cuando no hay conexión
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  label: const Text(
-                    'Save',
+                  icon: !_hasInternetConnection
+                      ? const Icon(Icons.wifi_off)
+                      : const Icon(Icons.save),
+                  label: !_hasInternetConnection
+                      ? const Text(
+                    'Sin conexión',
+                    style: TextStyle(fontSize: 18),
+                  )
+                      : const Text(
+                    'Guardar',
                     style: TextStyle(fontSize: 18),
                   ),
                 ),
               ),
+              if (!_hasInternetConnection) ...[
+                const SizedBox(height: 10),
+                const Text(
+                  'Conéctate a internet para guardar los cambios',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ],
             ],
           ),
         ),

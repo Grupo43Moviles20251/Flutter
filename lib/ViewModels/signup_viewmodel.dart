@@ -5,82 +5,98 @@ import 'package:fluttertoast/fluttertoast.dart';
 
 import '../Pages/login_page.dart';
 
-
-
-class SignUpViewmodel {
+class SignUpViewModel with ChangeNotifier {
   final SignUpRepository _signUpRepository;
   final ConnectivityService _connectivityService;
 
-  SignUpViewmodel(this._signUpRepository, this._connectivityService);
+  bool _isLoading = false;
+  String? _errorMessage;
 
-  Future<void> signUp(String name, String email, String password, String address, String birthday,  BuildContext context) async {
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  SignUpViewModel(this._signUpRepository, this._connectivityService);
+
+  Future<void> signUp(
+      String name,
+      String email,
+      String password,
+      String address,
+      String birthday,
+      BuildContext context,
+      ) async {
     try {
+      _setLoading(true);
+      _setError(null);
+
       final isConnected = await _connectivityService.isConnected();
-      if(!isConnected){
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('No internet connection. Try again to signup when you\'re back online.'),
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
+      if (!isConnected) {
+        _setError('No internet connection. Try again to signup when you\'re back online.');
         return;
       }
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return Center(
-            child: CircularProgressIndicator(),
-          );
-        },
+
+      final result = await _signUpRepository.signUp(
+        name,
+        email,
+        password,
+        address,
+        birthday,
       );
 
-      final success = await _signUpRepository.signUp(
-          name, email, password, address, birthday, context);
-
-      if (!context.mounted) return;
-      Navigator.of(context).pop();
-      if (success == "Success") {
-        Future.delayed(Duration(seconds: 2), () {
-          if (!context.mounted) return;
-          Navigator.pushReplacement(context, MaterialPageRoute(
-              builder: (context) => LoginPage(),
-              settings: RouteSettings(name: "LoginPage")
-          )
-          );
-        });
-
-        Fluttertoast.showToast(
-          msg: "✔ Usuario registrado. Redirigiendo al login...",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Color(0xFF38677A),
-          textColor: Colors.white,
-
-        );
+      if (result == "Success") {
+        _showSuccessToast();
+        _navigateToLogin(context);
       } else {
-        Fluttertoast.showToast(
-          msg: success,
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-
-        );
+        _setError(result);
+        _showErrorToast(result);
       }
-    }
-    catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Login failed: ${e.toString()}'),
-              duration: Duration(seconds: 3),
-            ));
-      }
+    } catch (e) {
+      _setError('Sign up failed: ${e.toString()}');
+    } finally {
+      _setLoading(false);
     }
   }
 
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
 
+  void _setError(String? error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  void _showSuccessToast() {
+    Fluttertoast.showToast(
+      msg: "✔ Usuario registrado. Redirigiendo al login...",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      backgroundColor: Color(0xFF38677A),
+      textColor: Colors.white,
+    );
+  }
+
+  void _showErrorToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.CENTER,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+    );
+  }
+
+  void _navigateToLogin(BuildContext context) {
+    Future.delayed(Duration(seconds: 2), () {
+      if (!context.mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginPage(),
+          settings: RouteSettings(name: "LoginPage"),
+        ),
+      );
+    });
+  }
 }
