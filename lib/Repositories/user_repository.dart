@@ -1,31 +1,24 @@
-// user_repository.dart
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:first_app/ServiceAdapters/firebase_service_adapter.dart';
-import 'package:first_app/Dtos/user_dto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-abstract class UserRepository {
-  Future<UserDTO> updateUserProfile({
-    required String name,
-    required String email,
-    String? address,
-    String? birthday,
-    File? profileImage,
-    String? existingImageUrl,
-  });
+import '../Dtos/user_dto.dart';
+import '../ServiceAdapters/firebase_service_adapter.dart';
 
-  Future<void> saveUserLocally(UserDTO user);
-}
+class UserRepository  {
+  final FirebaseServiceAdapter _firebaseService;
+  late SharedPreferences _prefs;
 
-class UserRepositoryImpl implements UserRepository {
-  final FirebaseServiceAdapter _firebaseService = FirebaseServiceAdapterImpl();
+  UserRepository() : _firebaseService = FirebaseServiceAdapterImpl() {
+    _initPrefs();
+  }
 
-  UserRepositoryImpl();
+  Future<void> _initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
 
-  @override
   Future<UserDTO> updateUserProfile({
     required String name,
     required String email,
@@ -36,21 +29,17 @@ class UserRepositoryImpl implements UserRepository {
   }) async {
     String? photoUrl;
 
-    // Upload new profile image if provided
     if (profileImage != null) {
-      photoUrl = await _firebaseService.uploadProfileImage( profileImage);
-    }
-    else{
+      photoUrl = await _firebaseService.uploadProfileImage(profileImage);
+    } else {
       photoUrl = existingImageUrl;
     }
 
-    // Update email if changed
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null && email != currentUser.email) {
       await _firebaseService.updateEmail(email);
     }
 
-    // Prepare user data
     final userData = {
       'name': name,
       'email': email,
@@ -59,14 +48,33 @@ class UserRepositoryImpl implements UserRepository {
       if (photoUrl != null) 'photoUrl': photoUrl,
     };
 
-    await _firebaseService.updateUserData( userData);
+    await _firebaseService.updateUserData(userData);
 
-    return UserDTO.fromJson(userData);
+    final updatedUser = UserDTO.fromJson(userData);
+    await saveUserLocally(updatedUser);
+
+    return updatedUser;
   }
 
-  @override
   Future<void> saveUserLocally(UserDTO user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('userData', json.encode(user.toJson()));
+    await _initPrefs();
+    await _prefs.setString('userData', json.encode(user.toJson()));
+  }
+
+  Future<UserDTO?> getLocalUser() async {
+    await _initPrefs();
+    final userJson = _prefs.getString('userData');
+    return userJson != null ? UserDTO.fromJson(json.decode(userJson)) : null;
+  }
+
+  Future<void> logout() async {
+    await FirebaseAuth.instance.signOut();
+    await clearLocalUser();
+  }
+
+  Future<void> clearLocalUser() async {
+    await _initPrefs();
+    await _prefs.remove('userData');
+    await _prefs.remove('isLoggedIn');
   }
 }

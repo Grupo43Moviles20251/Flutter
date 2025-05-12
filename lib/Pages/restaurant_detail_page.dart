@@ -39,6 +39,20 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
 
   Future<void> _showOrderDialog() async {
     final product = widget.restaurant.products[0];
+
+    // Verificar si hay productos disponibles
+    if (product.amount <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('This product is currently out of stock.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     int selectedQuantity = 1;
 
     final result = await showDialog<bool>(
@@ -100,6 +114,7 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
       await _processOrder(product, selectedQuantity);
     }
   }
+
 
   Future<void> _processOrder(Product product, int quantity) async {
     if (!mounted) return;
@@ -262,13 +277,15 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF2A9D8F),
+                                backgroundColor: product.amount > 0
+                                    ? const Color(0xFF2A9D8F)
+                                    : Colors.grey, // Cambia el color si no hay stock
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              onPressed: _isLoading
+                              onPressed: _isLoading || product.amount <= 0
                                   ? null
                                   : () async {
                                 if (await _checkInternetAndShowMessage()) {
@@ -277,8 +294,17 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
                               },
                               child: _isLoading
                                   ? const CircularProgressIndicator(color: Colors.white)
-                                  : const Text(
+                                  : product.amount > 0
+                                  ? const Text(
                                 'Order',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              )
+                                  : const Text(
+                                'Out of Stock',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
