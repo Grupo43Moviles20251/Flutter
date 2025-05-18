@@ -28,6 +28,15 @@ class HomeViewModel extends ChangeNotifier {
 
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
 
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
+  bool _hasMoreItems = true;
+  bool _isLoadingMore = false;
+
+  bool get hasMoreItems => _hasMoreItems;
+  bool get isLoadingMore => _isLoadingMore;
+
+
   HomeViewModel() {
     _initDatabase();
     _loadFavorites();
@@ -83,9 +92,18 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> loadRestaurants() async {
-    _isLoading = true;
-    _errorMessage = null;
+  Future<void> loadRestaurants({bool loadMore = false}) async {
+    if (loadMore) {
+      if (!_hasMoreItems || _isLoadingMore) return;
+      _isLoadingMore = true;
+      _currentPage++;
+    } else {
+      _isLoading = true;
+      _currentPage = 1;
+      _hasMoreItems = true;
+      _restaurants = [];
+    }
+
     notifyListeners();
 
     try {
@@ -94,7 +112,7 @@ class HomeViewModel extends ChangeNotifier {
 
       if (isConnected) {
         _isOffline = false;
-        await _loadFromNetwork(prefs);
+        await _loadFromNetwork(prefs, loadMore: loadMore);
       } else {
         _isOffline = true;
         await _loadFromCache(prefs);
@@ -102,24 +120,41 @@ class HomeViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = "Failed to load data: ${e.toString()}";
       print("Error loading restaurants: $e");
+      if (loadMore) {
+        _currentPage--; // Revertir el incremento de página si falla
+      }
     } finally {
       _isLoading = false;
+      _isLoadingMore = false;
       notifyListeners();
     }
   }
 
-  Future<void> _loadFromNetwork(SharedPreferences prefs) async {
+  Future<void> _loadFromNetwork(SharedPreferences prefs, {bool loadMore = false}) async {
     try {
-      _restaurants = await _restaurantRepository.fetchRestaurants();
+      final newRestaurants = await _restaurantRepository.fetchRestaurants(
+        page: _currentPage,
+        perPage: _itemsPerPage,
+      );
 
-      // Update cache
-      final cacheData = _restaurants.map((r) => r.toJson()).toList();
-      await prefs.setString(_cacheKey, json.encode(cacheData));
-      await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
+      if (loadMore) {
+        _restaurants.addAll(newRestaurants);
+      } else {
+        _restaurants = newRestaurants;
+      }
+
+      // Actualizar caché solo si es la primera página
+      if (!loadMore) {
+        final cacheData = _restaurants.map((r) => r.toJson()).toList();
+        await prefs.setString(_cacheKey, json.encode(cacheData));
+        await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
+      }
+
+      // Determinar si hay más elementos
+      _hasMoreItems = newRestaurants.length >= _itemsPerPage;
     } catch (e) {
-      // If network fails, try cache
       await _loadFromCache(prefs);
-      throw e; // Re-throw to be caught by outer catch
+      throw e;
     }
   }
 
