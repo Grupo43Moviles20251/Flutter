@@ -21,9 +21,7 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _viewModel = HomeViewModel()..loadRestaurants();
-    _scrollController.addListener(_scrollListener);
   }
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -115,38 +113,44 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Expanded(
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: viewModel.restaurants.length + (viewModel.hasMoreItems ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= viewModel.restaurants.length) {
-            return Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Center(
-                child: viewModel.isLoadingMore
-                    ? CircularProgressIndicator()
-                    : Text('No more items'),
-              ),
-            );
-          }
-
-          final r = viewModel.restaurants[index];
-          return RestaurantCard(
-            restaurant: r,
-            isFavoritePage: false,
-            isFavorite: viewModel.isFavorite(r),
-            onFavoriteToggle: () => viewModel.toggleFavorite(r),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RestaurantDetailPage(restaurant: r),
-                  settings: RouteSettings(name: "RestaurantDetail"),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: viewModel.restaurants.length,
+              itemBuilder: (context, index) {
+                final r = viewModel.restaurants[index];
+                return RestaurantCard(
+                  restaurant: r,
+                  isFavoritePage: false,
+                  isFavorite: viewModel.isFavorite(r),
+                  onFavoriteToggle: () => viewModel.toggleFavorite(r),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RestaurantDetailPage(restaurant: r),
+                        settings: RouteSettings(name: "RestaurantDetail"),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          if (viewModel.hasMoreItems)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                onPressed: () => viewModel.loadMoreItems(),
+                child: Text('Load More'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2A9D8F),
+                  minimumSize: Size(double.infinity, 50),
                 ),
-              );
-            },
-          );
-        },
+              ),
+            ),
+        ],
       ),
     );
   }

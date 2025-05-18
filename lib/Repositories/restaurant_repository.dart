@@ -7,8 +7,8 @@ class RestaurantRepository {
 
 
   // Obtener todos los restaurantes
-  Future<List<Restaurant>> fetchRestaurants({int page = 1, int perPage = 10}) async {
-    return backendServiceAdapter.fetchRestaurants(page: page, perPage: perPage);
+  Future<List<Restaurant>> fetchRestaurants() async {
+    return backendServiceAdapter.fetchRestaurants();
   }
 
 

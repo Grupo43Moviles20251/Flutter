@@ -21,7 +21,6 @@ class HomeViewModel extends ChangeNotifier {
   Database? _database;
   String? _errorMessage;
 
-  List<Restaurant> get restaurants => _restaurants;
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
   String? get errorMessage => _errorMessage;
@@ -33,8 +32,12 @@ class HomeViewModel extends ChangeNotifier {
   bool _hasMoreItems = true;
   bool _isLoadingMore = false;
 
-  bool get hasMoreItems => _hasMoreItems;
   bool get isLoadingMore => _isLoadingMore;
+
+  List<Restaurant> _allRestaurants = []; // Todos los restaurantes cargados
+
+  List<Restaurant> get restaurants => _allRestaurants.take(_currentPage * _itemsPerPage).toList();
+  bool get hasMoreItems => _hasMoreItems && (_allRestaurants.length > _currentPage * _itemsPerPage);
 
 
   HomeViewModel() {
@@ -93,18 +96,12 @@ class HomeViewModel extends ChangeNotifier {
   }
 
   Future<void> loadRestaurants({bool loadMore = false}) async {
-    if (loadMore) {
-      if (!_hasMoreItems || _isLoadingMore) return;
-      _isLoadingMore = true;
-      _currentPage++;
-    } else {
+    if (!loadMore) {
       _isLoading = true;
       _currentPage = 1;
-      _hasMoreItems = true;
-      _restaurants = [];
+      _allRestaurants = [];
+      notifyListeners();
     }
-
-    notifyListeners();
 
     try {
       final isConnected = await _connectivityService.isConnected();
@@ -120,42 +117,34 @@ class HomeViewModel extends ChangeNotifier {
     } catch (e) {
       _errorMessage = "Failed to load data: ${e.toString()}";
       print("Error loading restaurants: $e");
-      if (loadMore) {
-        _currentPage--; // Revertir el incremento de página si falla
-      }
     } finally {
       _isLoading = false;
-      _isLoadingMore = false;
       notifyListeners();
     }
   }
-
   Future<void> _loadFromNetwork(SharedPreferences prefs, {bool loadMore = false}) async {
     try {
-      final newRestaurants = await _restaurantRepository.fetchRestaurants(
-        page: _currentPage,
-        perPage: _itemsPerPage,
-      );
-
-      if (loadMore) {
-        _restaurants.addAll(newRestaurants);
-      } else {
-        _restaurants = newRestaurants;
-      }
-
-      // Actualizar caché solo si es la primera página
+      // Cargar todos los restaurantes de una sola vez
       if (!loadMore) {
-        final cacheData = _restaurants.map((r) => r.toJson()).toList();
+        _allRestaurants = await _restaurantRepository.fetchRestaurants();
+
+        // Actualizar caché
+        final cacheData = _allRestaurants.map((r) => r.toJson()).toList();
         await prefs.setString(_cacheKey, json.encode(cacheData));
         await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
       }
-
-      // Determinar si hay más elementos
-      _hasMoreItems = newRestaurants.length >= _itemsPerPage;
     } catch (e) {
       await _loadFromCache(prefs);
       throw e;
     }
+  }
+
+  Future<void> loadMoreItems() {
+    if (hasMoreItems) {
+      _currentPage++;
+      notifyListeners();
+    }
+    return Future.value();
   }
 
   Future<void> _loadFromCache(SharedPreferences prefs) async {

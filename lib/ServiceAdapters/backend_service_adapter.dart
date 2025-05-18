@@ -8,7 +8,7 @@ abstract class BackendServiceAdapter {
   Future<UserDTO> getUserProfile(String token);
   Future<UserDTO> createUser(UserDTO user, String token);
 
-  Future<List<Restaurant>> fetchRestaurants({int page = 1, int perPage = 10});
+  Future<List<Restaurant>> fetchRestaurants();
   Future<List<Restaurant>> fetchRestaurantsByType(int type);
   Future<List<Restaurant>> searchRestaurants(String query, {int? type});
 
@@ -68,12 +68,10 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
 
   // Usamos Isolates para procesar grandes cantidades de datos sin bloquear la UI
   @override
-  Future<List<Restaurant>> fetchRestaurants({int page = 1, int perPage = 10}) async {
+  Future<List<Restaurant>> fetchRestaurants() async {
     try {
-      print("Fetching restaurants from $baseUrl/restaurants?page=$page&per_page=$perPage");
-      final response = await http.get(
-          Uri.parse('$baseUrl/restaurants?page=$page&per_page=$perPage')
-      );
+      print("Fetching all restaurants from $baseUrl/restaurants");
+      final response = await http.get(Uri.parse('$baseUrl/restaurants'));
 
       if (response.statusCode == 200) {
         return await _processInIsolate(response.body);
@@ -85,7 +83,6 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       return [];
     }
   }
-
   Future<List<Restaurant>> _processInIsolate(String jsonData) async {
     final receivePort = ReceivePort();
 
