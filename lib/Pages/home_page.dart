@@ -143,7 +143,10 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () => viewModel.loadMoreItems(),
-                child: Text('Load More'),
+    child: Text(
+    'Load More',
+    style: TextStyle(color: Colors.white),
+    ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF2A9D8F),
                   minimumSize: Size(double.infinity, 50),
