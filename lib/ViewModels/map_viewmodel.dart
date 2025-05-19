@@ -108,20 +108,42 @@ class MapViewModel with ChangeNotifier {
           icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
         ),
       );
-    }
 
-    for (var restaurant in _restaurants) {
-      markers.add(
-        Marker(
-          markerId: MarkerId(restaurant.name),
-          position: LatLng(restaurant.latitude, restaurant.longitude),
-          infoWindow: InfoWindow(
-            title: restaurant.name,
-            snippet: restaurant.address,
+      for (var restaurant in _restaurants) {
+        // Calcular la distancia entre el usuario y el restaurante
+        double distanceInMeters = Geolocator.distanceBetween(
+          _userLocation!.latitude,
+          _userLocation!.longitude,
+          restaurant.latitude,
+          restaurant.longitude,
+        );
+
+        // Convertir a kilómetros
+        double distanceInKm = distanceInMeters / 1000;
+
+        // Determinar el color del marcador basado en la distancia
+        BitmapDescriptor markerColor;
+        if (distanceInKm <= 1.0) {
+          // Dentro de 1 km - verde
+          markerColor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen);
+        } else {
+          // Fuera de 1 km - rojo
+          markerColor = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed);
+        }
+
+        markers.add(
+          Marker(
+            markerId: MarkerId(restaurant.name),
+            position: LatLng(restaurant.latitude, restaurant.longitude),
+            infoWindow: InfoWindow(
+              title: restaurant.name,
+              snippet: '${restaurant.address} (${distanceInKm.toStringAsFixed(2)} km)',
+            ),
+            icon: markerColor, // Usar el color determinado
+            onTap: () => selectRestaurant(restaurant),
           ),
-          onTap: () => selectRestaurant(restaurant),
-        ),
-      );
+        );
+      }
     }
     return markers;
   }

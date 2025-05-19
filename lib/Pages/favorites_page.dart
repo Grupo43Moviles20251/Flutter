@@ -14,18 +14,11 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  late FavoritesViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (_) {
-        _viewModel = FavoritesViewModel();
+        final _viewModel = FavoritesViewModel();
         _viewModel.fetchFavorites(); // Initial load
         return _viewModel;
       },
@@ -45,28 +38,49 @@ class _FavoritesPageState extends State<FavoritesPage> {
                   style: TextStyle(fontSize: 18),
                 ),
               )
-                  : ListView.builder(
-                itemCount: vm.favorites.length,
-                itemBuilder: (ctx, i) {
-                  final r = vm.favorites[i];
-                  return RestaurantCard(
-                    restaurant: r,
-                    isFavoritePage: true,
-                    isFavorite: true,
-                    onFavoriteToggle: () {
-                      vm.toggleFavorite(r);
-                    },
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RestaurantDetailPage(restaurant: r),
-                          settings: RouteSettings(name: "RestaurantDetail"),
+                  : Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: vm.favorites.length,
+                      itemBuilder: (ctx, i) {
+                        final r = vm.favorites[i];
+                        return RestaurantCard(
+                          restaurant: r,
+                          isFavoritePage: true,
+                          isFavorite: true,
+                          onFavoriteToggle: () {
+                            vm.toggleFavorite(r);
+                          },
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RestaurantDetailPage(restaurant: r),
+                                settings: RouteSettings(name: "RestaurantDetail"),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                  if (vm.hasMoreItems)
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: ElevatedButton(
+                        onPressed: () => vm.loadMoreFavorites(),
+                        child: Text(
+                          'Load More',
+                          style: TextStyle(color: Colors.white),
                         ),
-                      );
-                    },
-                  );
-                },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF2A9D8F),
+                          minimumSize: Size(double.infinity, 50),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           );

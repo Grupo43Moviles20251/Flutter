@@ -70,12 +70,10 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
   @override
   Future<List<Restaurant>> fetchRestaurants() async {
     try {
-      print("Fetching restaurants from $baseUrl/restaurants");
+      print("Fetching all restaurants from $baseUrl/restaurants");
       final response = await http.get(Uri.parse('$baseUrl/restaurants'));
-      print("Response status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
-        // Process in isolate only if the data is large
         return await _processInIsolate(response.body);
       } else {
         throw Exception('Error fetching restaurants: ${response.statusCode}');
@@ -85,7 +83,6 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
       return [];
     }
   }
-
   Future<List<Restaurant>> _processInIsolate(String jsonData) async {
     final receivePort = ReceivePort();
 

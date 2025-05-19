@@ -21,12 +21,24 @@ class HomeViewModel extends ChangeNotifier {
   Database? _database;
   String? _errorMessage;
 
-  List<Restaurant> get restaurants => _restaurants;
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
   String? get errorMessage => _errorMessage;
 
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
+
+  int _currentPage = 1;
+  final int _itemsPerPage = 10;
+  bool _hasMoreItems = true;
+  bool _isLoadingMore = false;
+
+  bool get isLoadingMore => _isLoadingMore;
+
+  List<Restaurant> _allRestaurants = []; // Todos los restaurantes cargados
+
+  List<Restaurant> get restaurants => _allRestaurants.take(_currentPage * _itemsPerPage).toList();
+  bool get hasMoreItems => _hasMoreItems && (_allRestaurants.length > _currentPage * _itemsPerPage);
+
 
   HomeViewModel() {
     _initDatabase();
@@ -83,10 +95,13 @@ class HomeViewModel extends ChangeNotifier {
     }
   }
 
-  Future<void> loadRestaurants() async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  Future<void> loadRestaurants({bool loadMore = false}) async {
+    if (!loadMore) {
+      _isLoading = true;
+      _currentPage = 1;
+      _allRestaurants = [];
+      notifyListeners();
+    }
 
     try {
       final isConnected = await _connectivityService.isConnected();
@@ -94,7 +109,7 @@ class HomeViewModel extends ChangeNotifier {
 
       if (isConnected) {
         _isOffline = false;
-        await _loadFromNetwork(prefs);
+        await _loadFromNetwork(prefs, loadMore: loadMore);
       } else {
         _isOffline = true;
         await _loadFromCache(prefs);
@@ -107,20 +122,29 @@ class HomeViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  Future<void> _loadFromNetwork(SharedPreferences prefs) async {
+  Future<void> _loadFromNetwork(SharedPreferences prefs, {bool loadMore = false}) async {
     try {
-      _restaurants = await _restaurantRepository.fetchRestaurants();
+      // Cargar todos los restaurantes de una sola vez
+      if (!loadMore) {
+        _allRestaurants = await _restaurantRepository.fetchRestaurants();
 
-      // Update cache
-      final cacheData = _restaurants.map((r) => r.toJson()).toList();
-      await prefs.setString(_cacheKey, json.encode(cacheData));
-      await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
+        // Actualizar caché
+        final cacheData = _allRestaurants.map((r) => r.toJson()).toList();
+        await prefs.setString(_cacheKey, json.encode(cacheData));
+        await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
+      }
     } catch (e) {
-      // If network fails, try cache
       await _loadFromCache(prefs);
-      throw e; // Re-throw to be caught by outer catch
+      throw e;
     }
+  }
+
+  Future<void> loadMoreItems() {
+    if (hasMoreItems) {
+      _currentPage++;
+      notifyListeners();
+    }
+    return Future.value();
   }
 
   Future<void> _loadFromCache(SharedPreferences prefs) async {

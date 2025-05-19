@@ -8,8 +8,9 @@ class RestaurantRepository {
 
   // Obtener todos los restaurantes
   Future<List<Restaurant>> fetchRestaurants() async {
-      return backendServiceAdapter.fetchRestaurants();
+    return backendServiceAdapter.fetchRestaurants();
   }
+
 
   // Buscar restaurantes por tipo (Restaurantes, Cafés, Supermercados)
   Future<List<Restaurant>> fetchRestaurantsByType(int type) async {

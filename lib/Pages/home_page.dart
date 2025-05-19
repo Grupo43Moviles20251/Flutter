@@ -15,15 +15,27 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late HomeViewModel _viewModel;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _viewModel = HomeViewModel()..loadRestaurants();
   }
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
-  Future<void> _refreshData() async {
-    await _viewModel.loadRestaurants();
+  void _scrollListener() {
+    if (_scrollController.offset >= _scrollController.position.maxScrollExtent &&
+        !_scrollController.position.outOfRange) {
+      // Llegamos al final de la lista
+      if (_viewModel.hasMoreItems && !_viewModel.isLoadingMore) {
+        _viewModel.loadRestaurants(loadMore: true);
+      }
+    }
   }
 
   @override
@@ -37,24 +49,25 @@ class _HomePageState extends State<HomePage> {
             body: RefreshIndicator(
               onRefresh: _refreshData,
               child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-              // Título
-              Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Products for you",
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'MontserratAlternates',
-                  color: Color(0xFF2A9D8F),
-                ),
-              ),),
-              _buildContent(viewModel)
-              ],
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Título
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "Products for you",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'MontserratAlternates',
+                        color: Color(0xFF2A9D8F),
+                      ),
+                    ),
+                  ),
+                  _buildContent(viewModel)
+                ],
+              ),
             ),
-          ),
           );
         },
       ),
@@ -62,7 +75,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildContent(HomeViewModel viewModel) {
-    if (viewModel.isLoading) {
+    if (viewModel.isLoading && viewModel.restaurants.isEmpty) {
       return Expanded(child: Center(child: CircularProgressIndicator()));
     }
 
@@ -100,27 +113,52 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Expanded(
-      child: ListView.builder(
-        itemCount: viewModel.restaurants.length,
-        itemBuilder: (context, index) {
-          final r = viewModel.restaurants[index];
-          return RestaurantCard(
-            restaurant: r,
-            isFavoritePage: false,
-            isFavorite: viewModel.isFavorite(r),
-            onFavoriteToggle: () => viewModel.toggleFavorite(r),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => RestaurantDetailPage(restaurant: r),
-                  settings: RouteSettings(name: "RestaurantDetail"),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: viewModel.restaurants.length,
+              itemBuilder: (context, index) {
+                final r = viewModel.restaurants[index];
+                return RestaurantCard(
+                  restaurant: r,
+                  isFavoritePage: false,
+                  isFavorite: viewModel.isFavorite(r),
+                  onFavoriteToggle: () => viewModel.toggleFavorite(r),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RestaurantDetailPage(restaurant: r),
+                        settings: RouteSettings(name: "RestaurantDetail"),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          if (viewModel.hasMoreItems)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: ElevatedButton(
+                onPressed: () => viewModel.loadMoreItems(),
+    child: Text(
+    'Load More',
+    style: TextStyle(color: Colors.white),
+    ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF2A9D8F),
+                  minimumSize: Size(double.infinity, 50),
                 ),
-              );
-            },
-          );
-        },
+              ),
+            ),
+        ],
       ),
     );
+  }
+
+  Future<void> _refreshData() async {
+    await _viewModel.loadRestaurants();
   }
 }
