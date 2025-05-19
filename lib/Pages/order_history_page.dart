@@ -1,7 +1,7 @@
-// pages/order_history_page.dart
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/order_model.dart';
 import 'package:first_app/ViewModels/order_viewmodel.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class OrderHistoryPage extends StatefulWidget {
   final OrderViewModel orderViewModel;
@@ -15,11 +15,40 @@ class OrderHistoryPage extends StatefulWidget {
 class _OrderHistoryPageState extends State<OrderHistoryPage> {
   late Future<List<OrderModel>> _ordersFuture;
   bool _isLoading = false;
+  bool _hasInternet = true;
+  late Stream<List<ConnectivityResult>> _connectivityStream;
 
   @override
   void initState() {
     super.initState();
-    _ordersFuture = widget.orderViewModel.getOrders();
+    _ordersFuture = _fetchOrdersWithConnectivityCheck();
+    _connectivityStream = Connectivity().onConnectivityChanged;
+    _connectivityStream.listen((result) {
+      if (result.contains(ConnectivityResult.none)) {
+        setState(() {
+          _hasInternet = false;
+        });
+      } else {
+        setState(() {
+          _hasInternet = true;
+        });
+      }
+    });
+  }
+
+  Future<List<OrderModel>> _fetchOrdersWithConnectivityCheck() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none)) {
+      setState(() {
+        _hasInternet = false;
+      });
+      return [];
+    }
+
+    setState(() {
+      _hasInternet = true;
+    });
+    return widget.orderViewModel.getOrders();
   }
 
   Future<void> _refreshOrders() async {
@@ -27,7 +56,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
       _isLoading = true;
     });
     try {
-      final orders = await widget.orderViewModel.getOrders();
+      final orders = await _fetchOrdersWithConnectivityCheck();
       setState(() {
         _ordersFuture = Future.value(orders);
       });
@@ -46,42 +75,79 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refreshOrders,
+            onPressed: _hasInternet ? _refreshOrders : null,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : FutureBuilder<List<OrderModel>>(
-        future: _ordersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Column(
+        children: [
+          if (!_hasInternet)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.red,
+              child: const Row(
+                children: [
+                  Icon(Icons.wifi_off, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'No internet connection',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : FutureBuilder<List<OrderModel>>(
+              future: _ordersFuture,
+              builder: (context, snapshot) {
+                if (!_hasInternet && (snapshot.data == null || snapshot.data!.isEmpty)) {
+                  return const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text('No internet connection'),
+                        Text('Connect to view your orders'),
+                      ],
+                    ),
+                  );
+                }
 
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          final orders = snapshot.data ?? [];
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-          if (orders.isEmpty) {
-            return const Center(
-              child: Text('No orders yet. Start ordering to see them here!'),
-            );
-          }
+                final allOrders = snapshot.data ?? [];
+                // Take only the last 10 orders
+                final recentOrders = allOrders.take(10).toList();
 
-          return RefreshIndicator(
-            onRefresh: _refreshOrders,
-            child: ListView.builder(
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                final order = orders[index];
-                return _buildOrderCard(order);
+                if (recentOrders.isEmpty) {
+                  return const Center(
+                    child: Text('No recent orders'),
+                  );
+                }
+
+                return RefreshIndicator(
+                  onRefresh: _hasInternet ? _refreshOrders : () async {},
+                  child: ListView.builder(
+                    itemCount: recentOrders.length,
+                    itemBuilder: (context, index) {
+                      final order = recentOrders[index];
+                      return _buildOrderCard(order);
+                    },
+                  ),
+                );
               },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
@@ -113,22 +179,21 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
             Text('Quantity: ${order.quantity}'),
             const SizedBox(height: 8),
             Text('Total: \$${(order.price * order.quantity).toStringAsFixed(2)}'),
             const SizedBox(height: 8),
             Text(
-              'Order Date: ${order.orderDate}',
+              'Date: ${order.orderDate}',
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Text(
-              'Order ID: ${order.orderId}',
+              'ID: ${order.orderId}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            if (order.status == 'pending')
+            if (order.status == 'pending' && _hasInternet)
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
@@ -159,6 +224,8 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
   }
 
   Future<void> _cancelOrder(String orderId) async {
+    if (!_hasInternet) return;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
