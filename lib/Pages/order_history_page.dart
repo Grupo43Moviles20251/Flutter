@@ -1,4 +1,3 @@
-// pages/order_history_page.dart
 import 'package:flutter/material.dart';
 import 'package:first_app/Models/order_model.dart';
 import 'package:first_app/ViewModels/order_viewmodel.dart';
@@ -111,7 +110,7 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                         Icon(Icons.wifi_off, size: 48, color: Colors.grey),
                         SizedBox(height: 16),
                         Text('No internet connection'),
-                        Text('Please connect to the internet to view your orders'),
+                        Text('Connect to view your orders'),
                       ],
                     ),
                   );
@@ -125,20 +124,22 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                   return Center(child: Text('Error: ${snapshot.error}'));
                 }
 
-                final orders = snapshot.data ?? [];
+                final allOrders = snapshot.data ?? [];
+                // Take only the last 10 orders
+                final recentOrders = allOrders.take(10).toList();
 
-                if (orders.isEmpty) {
+                if (recentOrders.isEmpty) {
                   return const Center(
-                    child: Text('No orders yet. Start ordering to see them here!'),
+                    child: Text('No recent orders'),
                   );
                 }
 
                 return RefreshIndicator(
                   onRefresh: _hasInternet ? _refreshOrders : () async {},
                   child: ListView.builder(
-                    itemCount: orders.length,
+                    itemCount: recentOrders.length,
                     itemBuilder: (context, index) {
-                      final order = orders[index];
+                      final order = recentOrders[index];
                       return _buildOrderCard(order);
                     },
                   ),
@@ -178,19 +179,18 @@ class _OrderHistoryPageState extends State<OrderHistoryPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 8),
             Text('Quantity: ${order.quantity}'),
             const SizedBox(height: 8),
             Text('Total: \$${(order.price * order.quantity).toStringAsFixed(2)}'),
             const SizedBox(height: 8),
             Text(
-              'Order Date: ${order.orderDate}',
+              'Date: ${order.orderDate}',
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Text(
-              'Order ID: ${order.orderId}',
+              'ID: ${order.orderId}',
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
             if (order.status == 'pending' && _hasInternet)
