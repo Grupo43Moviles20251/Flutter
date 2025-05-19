@@ -142,6 +142,7 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
             _showErrorDialog();
           } else {
             await viewModel.sendOrderAnalitycs(product.productId, product.productName, quantity);
+            await viewModel.logDetailEvent(product.productId.toString(), "order");
             _showOrderConfirmationDialog(orderCode!);
           }
         } catch (e) {
@@ -327,7 +328,7 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
                                   ? null
                                   : () async {
                                 if (await _checkInternetAndShowMessage()) {
-                                  await viewModel.logDirections(product.productId.toString());
+                                  await viewModel.logDetailEvent(product.productId.toString(), "directions");
                                   final Uri directionsUri = Uri.parse(
                                       'https://www.google.com/maps/dir/?api=1&destination='
                                           '${widget.restaurant.latitude},${widget.restaurant.longitude}&travelmode=driving'

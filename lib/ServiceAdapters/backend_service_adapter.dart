@@ -15,7 +15,7 @@ abstract class BackendServiceAdapter {
   Future<String> signUp(String name, String email, String password, String address, String birthday);
 
   Future<String> orderItem(int itemId, int quantity);
-  Future<void> logDetailEvent(String restaurantId, String eventType);
+  
 }
 
 class BackendServiceAdapterImpl implements BackendServiceAdapter {
@@ -201,18 +201,7 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
     }
   }
 
-  @override
-  Future<void> logDetailEvent(String restaurantId, String eventType) async {
-    await client.post(
-      Uri.parse('$baseUrl/detail-events'),
-      headers: {'Content-Type': 'application/json'},
-      body: json.encode({
-        'restaurant_id': restaurantId,
-        'event_type': eventType,
-        'timestamp': DateTime.now().toIso8601String(),
-      }),
-    );
-  }
+  
 
 }
 

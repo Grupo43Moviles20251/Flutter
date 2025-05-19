@@ -25,7 +25,7 @@ class restaurantDetailRepository implements RestaurantDetailRepository{
 
   @override
   Future<void> logDetailEvent(String productId, String eventType) {
-    return backendServiceAdapter.logDetailEvent(productId, eventType);
+    return firebaseServiceAdapter.logDetailEvent(productId, eventType);
   }
 
 }
