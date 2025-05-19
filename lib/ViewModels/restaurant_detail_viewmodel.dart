@@ -26,4 +26,10 @@ class RestaurantDetailViewModel {
   Future<void> logDirections(String productId) {
     return _repository.logDetailEvent(productId, 'directions');
   }
+
+  Future<void> logDetailEvent(String productId, String eventType) {
+    print("Sending logDetailEvent: $productId - $eventType");
+  return _repository.logDetailEvent(productId, eventType);
+}
+
 }

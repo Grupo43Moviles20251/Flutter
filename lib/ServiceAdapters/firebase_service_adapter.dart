@@ -20,6 +20,7 @@ abstract class FirebaseServiceAdapter {
   Future<void> updateUserData(Map<String, dynamic> userData);
   
   Future<void> sendOrderAnalytics(int productId,String nameProduct, int quantity);
+  Future<void> logDetailEvent(String restaurantId, String eventType);
 
   
 
@@ -127,6 +128,20 @@ class FirebaseServiceAdapterImpl implements FirebaseServiceAdapter{
       print("Error al guardar la orden: $e");
     }
   }
+
+  @override
+Future<void> logDetailEvent(String restaurantId, String eventType) async {
+  try {
+    await FirebaseFirestore.instance.collection('detail_events').add({
+      'restaurant_id': restaurantId,
+      'event_type': eventType,
+      'timestamp': Timestamp.now(),
+    });
+  } catch (e) {
+    print("Error logging detail event: $e");
+  }
+}
+
 }
 
 
