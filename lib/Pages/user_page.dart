@@ -30,110 +30,138 @@ class _UserPageState extends State<UserPage> {
             body: PopScope(
               canPop: false,
               child: Scaffold(
-                body: viewModel.isLoading
-                    ? Center(child: CircularProgressIndicator())
-                    : RefreshIndicator(
-                  onRefresh: viewModel.reloadUserData,
-                  child: SingleChildScrollView(
-                    physics: AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(height: 40),
-                        // Profile Avatar
-                        ProfileImageWithLRUCache(
-                          imageUrl: viewModel.userData?.photoUrl,
-                          radius: 60,
-                          isOnline: viewModel.isOnline,
-                        ),
-                        SizedBox(height: 20),
-
-                        // User Name
-                        Text(
-                          viewModel.userData?.name ?? 'No name provided',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(height: 40),
-
-                        // User Info Card
-                        Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(15),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Column(
-                              children: [
-                                // Email
-                                _buildInfoRow(Icons.email, 'Email',
-                                    viewModel.userData?.email ?? 'No email'),
-                                Divider(height: 30),
-
-                                // Address
-                                _buildInfoRow(Icons.location_on, 'Address',
-                                    viewModel.userData?.address ?? 'No address provided'),
-                                Divider(height: 30),
-
-                                // Birthday
-                                _buildInfoRow(Icons.cake, 'Birthday',
-                                    viewModel.userData?.birthday ?? 'Not specified'),
-                              ],
+                body: Column(
+                  children: [
+                    if (!viewModel.isOnline)
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        color: Colors.red,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.wifi_off, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text(
+                              'No internet connection',
+                              style: TextStyle(color: Colors.white),
                             ),
-                          ),
+                          ],
                         ),
-                        SizedBox(height: 10),
+                      ),
+                    Expanded(
+                      child: viewModel.isLoading
+                          ? Center(child: CircularProgressIndicator())
+                          : RefreshIndicator(
+                        onRefresh: viewModel.isOnline
+                            ? viewModel.reloadUserData
+                            : () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('No internet connection. Cannot refresh profile.'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return Future.value();
+                        },
+                        child: SingleChildScrollView(
+                          physics: AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(height: 40),
+                              // Profile Avatar
+                              ProfileImageWithLRUCache(
+                                imageUrl: viewModel.userData?.photoUrl,
+                                radius: 60,
+                                isOnline: viewModel.isOnline,
+                              ),
+                              SizedBox(height: 20),
 
+                              // User Name
+                              Text(
+                                viewModel.userData?.name ?? 'No name provided',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 40),
 
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (constraints.maxWidth < 600) {
-
-                              return Column(
-                                children: [
-                                  _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
-                                    _navigateToOrderHistory(context, viewModel);
-                                  }, color: Colors.blue),
-                                  SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              // User Info Card
+                              Card(
+                                elevation: 4,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(15),
+                                ),
+                                child: Padding(
+                                  padding: EdgeInsets.all(20),
+                                  child: Column(
                                     children: [
-                                      _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
-                                        _navigateToEditProfile(context, viewModel);
-                                      }, color: Color(0xFF2A9D8F)),
-                                      _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
-                                        _signOut(context, viewModel);
-                                      }, color: Colors.red),
+                                      // Email
+                                      _buildInfoRow(Icons.email, 'Email',
+                                          viewModel.userData?.email ?? 'No email'),
+                                      Divider(height: 30),
+
+                                      // Address
+                                      _buildInfoRow(Icons.location_on, 'Address',
+                                          viewModel.userData?.address ?? 'No address provided'),
+                                      Divider(height: 30),
+
+                                      // Birthday
+                                      _buildInfoRow(Icons.cake, 'Birthday',
+                                          viewModel.userData?.birthday ?? 'Not specified'),
                                     ],
                                   ),
-                                ],
-                              );
-                            } else {
+                                ),
+                              ),
+                              SizedBox(height: 10),
 
-                              return Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
-                                    _navigateToOrderHistory(context, viewModel);
-                                  }, color: Colors.blue),
-                                  _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
-                                    _navigateToEditProfile(context, viewModel);
-                                  }, color: Color(0xFF2A9D8F)),
-                                  _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
-                                    _signOut(context, viewModel);
-                                  }, color: Colors.red),
-                                ],
-                              );
-                            }
-                          },
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  if (constraints.maxWidth < 600) {
+                                    return Column(
+                                      children: [
+                                        _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
+                                          _navigateToOrderHistory(context, viewModel);
+                                        }, color: Colors.blue),
+                                        SizedBox(height: 10),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                          children: [
+                                            _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
+                                              _navigateToEditProfile(context, viewModel);
+                                            }, color: Color(0xFF2A9D8F)),
+                                            _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
+                                              _signOut(context, viewModel);
+                                            }, color: Colors.red),
+                                          ],
+                                        ),
+                                      ],
+                                    );
+                                  } else {
+                                    return Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
+                                          _navigateToOrderHistory(context, viewModel);
+                                        }, color: Colors.blue),
+                                        _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
+                                          _navigateToEditProfile(context, viewModel);
+                                        }, color: Color(0xFF2A9D8F)),
+                                        _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
+                                          _signOut(context, viewModel);
+                                        }, color: Colors.red),
+                                      ],
+                                    );
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
@@ -144,24 +172,23 @@ class _UserPageState extends State<UserPage> {
     );
   }
 
-
   Future<void> _navigateToOrderHistory(BuildContext context, UserViewModel viewModel) async {
     if (!viewModel.isOnline) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('No internet connection. Try again when you\'re back online.'),
-          duration: Duration(seconds: 3),
-        ));
-        return;
-      }
-        Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OrderHistoryPage(
-              orderViewModel: OrderViewModel(orderRepository: OrderRepositoryImpl())),
-        ),
-      );
+          SnackBar(
+            content: Text('No internet connection. Try again when you\'re back online.'),
+            duration: Duration(seconds: 3),
+          ));
+      return;
     }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrderHistoryPage(
+            orderViewModel: OrderViewModel(orderRepository: OrderRepositoryImpl())),
+      ),
+    );
+  }
 
   Future<void> _navigateToEditProfile(BuildContext context, UserViewModel viewModel) async {
     if (!viewModel.isOnline) {
@@ -231,10 +258,10 @@ class _UserPageState extends State<UserPage> {
         required Color color,
       }) {
     return ElevatedButton.icon(
-      icon: Icon(icon, color: Colors.white), // Icono en blanco
+      icon: Icon(icon, color: Colors.white),
       label: Text(
         label,
-        style: TextStyle(color: Colors.white), // Texto en blanco
+        style: TextStyle(color: Colors.white),
       ),
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
