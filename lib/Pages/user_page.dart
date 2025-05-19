@@ -1,3 +1,5 @@
+import 'package:first_app/Repositories/order_repository.dart';
+import 'package:first_app/ViewModels/order_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:first_app/ViewModels/user_viewmodel.dart';
@@ -7,6 +9,7 @@ import 'package:first_app/Services/connection_helper.dart';
 import 'package:first_app/Repositories/user_repository.dart';
 import 'edit_profile_page.dart';
 import 'login_page.dart';
+import 'order_history_page.dart';
 
 class UserPage extends StatefulWidget {
   @override
@@ -83,108 +86,50 @@ class _UserPageState extends State<UserPage> {
                             ),
                           ),
                         ),
-                        SizedBox(height: 40),
+                        SizedBox(height: 10),
 
-                        // Action Buttons
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            // Edit Button
-                            ElevatedButton(
-                              onPressed: () async {
-                                if (!viewModel.isOnline) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          'No internet connection. Try again when you\'re back online.'),
-                                      duration: Duration(seconds: 3),
-                                    ),
-                                  );
-                                  return;
-                                }
 
-                                if (viewModel.userData != null) {
-                                  final updatedUser = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => EditProfilePage(
-                                        userData: viewModel.userData!,
-                                        viewModel: viewModel,
-                                      ),
-                                    ),
-                                  );
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            if (constraints.maxWidth < 600) {
 
-                                  if (updatedUser != null) {
-                                    viewModel.userData = updatedUser;
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF2A9D8F),
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 40, vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: Text(
-                                "Edit Profile",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
+                              return Column(
+                                children: [
+                                  _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
+                                    _navigateToOrderHistory(context, viewModel);
+                                  }, color: Colors.blue),
+                                  SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
+                                        _navigateToEditProfile(context, viewModel);
+                                      }, color: Color(0xFF2A9D8F)),
+                                      _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
+                                        _signOut(context, viewModel);
+                                      }, color: Colors.red),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            } else {
 
-                            // Sign Out Button
-                            ElevatedButton(
-                              onPressed: () async {
-                                if (!viewModel.isOnline) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('No internet connection. Try again when you\'re back online.'),
-                                      duration: Duration(seconds: 3),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                try {
-                                  await viewModel.logout();
-                                  Navigator.pushAndRemoveUntil(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => LoginPage(),
-                                      settings: RouteSettings(name: "LoginPage"),
-                                    ),
-                                        (route) => false,
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error during logout: ${e.toString()}'),
-                                      duration: Duration(seconds: 3),
-                                    ),
-                                  );
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 40, vertical: 15),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
-                              child: Text(
-                                "Sign Out",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ],
+                              return Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  _buildActionButton(context, viewModel, Icons.history, 'View Order History', () {
+                                    _navigateToOrderHistory(context, viewModel);
+                                  }, color: Colors.blue),
+                                  _buildActionButton(context, viewModel, Icons.edit, 'Edit Profile', () {
+                                    _navigateToEditProfile(context, viewModel);
+                                  }, color: Color(0xFF2A9D8F)),
+                                  _buildActionButton(context, viewModel, Icons.logout, 'Sign Out', () {
+                                    _signOut(context, viewModel);
+                                  }, color: Colors.red),
+                                ],
+                              );
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -195,6 +140,110 @@ class _UserPageState extends State<UserPage> {
             selectedIndex: 0,
           );
         },
+      ),
+    );
+  }
+
+
+  Future<void> _navigateToOrderHistory(BuildContext context, UserViewModel viewModel) async {
+    if (!viewModel.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No internet connection. Try again when you\'re back online.'),
+          duration: Duration(seconds: 3),
+        ));
+        return;
+      }
+        Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OrderHistoryPage(
+              orderViewModel: OrderViewModel(orderRepository: OrderRepositoryImpl())),
+        ),
+      );
+    }
+
+  Future<void> _navigateToEditProfile(BuildContext context, UserViewModel viewModel) async {
+    if (!viewModel.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No internet connection. Try again when you\'re back online.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (viewModel.userData != null) {
+      final updatedUser = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditProfilePage(
+            userData: viewModel.userData!,
+            viewModel: viewModel,
+          ),
+        ),
+      );
+
+      if (updatedUser != null) {
+        viewModel.userData = updatedUser;
+      }
+    }
+  }
+
+  Future<void> _signOut(BuildContext context, UserViewModel viewModel) async {
+    if (!viewModel.isOnline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No internet connection. Try again when you\'re back online.'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await viewModel.logout();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LoginPage(),
+          settings: RouteSettings(name: "LoginPage"),
+        ),
+            (route) => false,
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error during logout: ${e.toString()}'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  Widget _buildActionButton(
+      BuildContext context,
+      UserViewModel viewModel,
+      IconData icon,
+      String label,
+      VoidCallback onPressed, {
+        required Color color,
+      }) {
+    return ElevatedButton.icon(
+      icon: Icon(icon, color: Colors.white), // Icono en blanco
+      label: Text(
+        label,
+        style: TextStyle(color: Colors.white), // Texto en blanco
+      ),
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
     );
   }

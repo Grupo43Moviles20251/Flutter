@@ -134,7 +134,7 @@ class _RestaurantDetailPageState extends State<RestaurantDetailPage> {
               return;
               }
 
-              final orderCode = await viewModel.orderItem(product.productId, quantity);
+              final orderCode = await viewModel.orderItem(product.productId, quantity, product.productName, product.discountPrice );
 
           if (!mounted) return;
 
