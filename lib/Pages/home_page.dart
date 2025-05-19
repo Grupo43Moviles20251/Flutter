@@ -14,14 +14,14 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late HomeViewModel _viewModel;
   final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    _viewModel = HomeViewModel()..loadRestaurants();
+    _scrollController.addListener(_scrollListener);
   }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -31,23 +31,23 @@ class _HomePageState extends State<HomePage> {
   void _scrollListener() {
     if (_scrollController.offset >= _scrollController.position.maxScrollExtent &&
         !_scrollController.position.outOfRange) {
-      // Llegamos al final de la lista
-      if (_viewModel.hasMoreItems && !_viewModel.isLoadingMore) {
-        _viewModel.loadRestaurants(loadMore: true);
+      final viewModel = Provider.of<HomeViewModel>(context, listen: false);
+      if (viewModel.hasMoreItems && !viewModel.isLoadingMore) {
+        viewModel.loadMoreItems();
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _viewModel,
+    return ChangeNotifierProvider(
+      create: (_) => HomeViewModel(),
       child: Consumer<HomeViewModel>(
         builder: (context, viewModel, _) {
           return CustomScaffold(
             selectedIndex: widget.selectedIndex,
             body: RefreshIndicator(
-              onRefresh: _refreshData,
+              onRefresh: () => viewModel.loadRestaurants(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -79,44 +79,12 @@ class _HomePageState extends State<HomePage> {
       return Expanded(child: Center(child: CircularProgressIndicator()));
     }
 
-    if (viewModel.restaurants.isEmpty) {
-      return Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                viewModel.isOffline ? Icons.wifi_off : Icons.error_outline,
-                size: 48,
-                color: Colors.grey,
-              ),
-              SizedBox(height: 16),
-              Text(
-                viewModel.isOffline
-                    ? "No internet connection. Pull down to refresh."
-                    : "No products found.",
-                style: TextStyle(fontSize: 16),
-                textAlign: TextAlign.center,
-              ),
-              if (viewModel.isOffline)
-                TextButton(
-                  onPressed: _refreshData,
-                  child: Text('Try again'),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Color(0xFF2A9D8F),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
     return Expanded(
       child: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               itemCount: viewModel.restaurants.length,
               itemBuilder: (context, index) {
                 final r = viewModel.restaurants[index];
@@ -138,15 +106,17 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
-          if (viewModel.hasMoreItems)
+          if (viewModel.isLoadingMore)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
+            ),
+          if (viewModel.hasMoreItems && !viewModel.isLoadingMore)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () => viewModel.loadMoreItems(),
-    child: Text(
-    'Load More',
-    style: TextStyle(color: Colors.white),
-    ),
+                child: Text('Load More'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF2A9D8F),
                   minimumSize: Size(double.infinity, 50),
@@ -156,9 +126,5 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
-  }
-
-  Future<void> _refreshData() async {
-    await _viewModel.loadRestaurants();
   }
 }

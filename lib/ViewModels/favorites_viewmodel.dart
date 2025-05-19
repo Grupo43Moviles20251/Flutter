@@ -100,9 +100,8 @@ class FavoritesViewModel extends ChangeNotifier {
         all = [];
       }
 
-      // Guardamos todos los favoritos
       _allFavorites = all.where((r) => favNames.contains(r.name)).toList();
-      _currentPage = 1; // Resetear a la primera página
+      _currentPage = 1;
 
       // Emit updated favorites to the stream
       _favoritesStreamController.add(_allFavorites);

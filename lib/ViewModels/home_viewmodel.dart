@@ -12,37 +12,29 @@ class HomeViewModel extends ChangeNotifier {
 
   static const _cacheKey = 'restaurants_cache';
   static const _cacheDurationKey = 'restaurants_cache_timestamp';
-  static const _cacheDuration = Duration(hours: 1);
 
   Set<String> _favorites = {};
-  List<Restaurant> _restaurants = [];
+  List<Restaurant> _allRestaurants = [];
   bool _isLoading = true;
   bool _isOffline = false;
   Database? _database;
-  String? _errorMessage;
 
   bool get isLoading => _isLoading;
   bool get isOffline => _isOffline;
-  String? get errorMessage => _errorMessage;
-
   bool isFavorite(Restaurant r) => _favorites.contains(r.name);
 
   int _currentPage = 1;
   final int _itemsPerPage = 10;
-  bool _hasMoreItems = true;
   bool _isLoadingMore = false;
 
   bool get isLoadingMore => _isLoadingMore;
-
-  List<Restaurant> _allRestaurants = []; // Todos los restaurantes cargados
-
   List<Restaurant> get restaurants => _allRestaurants.take(_currentPage * _itemsPerPage).toList();
-  bool get hasMoreItems => _hasMoreItems && (_allRestaurants.length > _currentPage * _itemsPerPage);
-
+  bool get hasMoreItems => _allRestaurants.length > _currentPage * _itemsPerPage;
 
   HomeViewModel() {
     _initDatabase();
     _loadFavorites();
+    loadRestaurants(); // Cargar datos al iniciar
   }
 
   Future<void> _initDatabase() async {
@@ -50,9 +42,7 @@ class HomeViewModel extends ChangeNotifier {
       'favorites_database.db',
       version: 1,
       onCreate: (db, version) async {
-        await db.execute(
-          'CREATE TABLE favorites (name TEXT PRIMARY KEY)',
-        );
+        await db.execute('CREATE TABLE favorites (name TEXT PRIMARY KEY)');
       },
     );
   }
@@ -76,18 +66,11 @@ class HomeViewModel extends ChangeNotifier {
     try {
       if (_favorites.contains(r.name)) {
         _favorites.remove(r.name);
-        await _database!.delete(
-          'favorites',
-          where: 'name = ?',
-          whereArgs: [r.name],
-        );
+        await _database!.delete('favorites', where: 'name = ?', whereArgs: [r.name]);
       } else {
         _favorites.add(r.name);
-        await _database!.insert(
-          'favorites',
-          {'name': r.name},
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await _database!.insert('favorites', {'name': r.name},
+            conflictAlgorithm: ConflictAlgorithm.replace);
       }
       notifyListeners();
     } catch (e) {
@@ -99,73 +82,66 @@ class HomeViewModel extends ChangeNotifier {
     if (!loadMore) {
       _isLoading = true;
       _currentPage = 1;
-      _allRestaurants = [];
       notifyListeners();
     }
 
     try {
       final isConnected = await _connectivityService.isConnected();
       final prefs = await SharedPreferences.getInstance();
+      _isOffline = !isConnected;
 
       if (isConnected) {
-        _isOffline = false;
-        await _loadFromNetwork(prefs, loadMore: loadMore);
+        await _loadFromNetwork(prefs);
       } else {
-        _isOffline = true;
         await _loadFromCache(prefs);
       }
     } catch (e) {
-      _errorMessage = "Failed to load data: ${e.toString()}";
       print("Error loading restaurants: $e");
+      final prefs = await SharedPreferences.getInstance();
+      await _loadFromCache(prefs);
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
-  Future<void> _loadFromNetwork(SharedPreferences prefs, {bool loadMore = false}) async {
-    try {
-      // Cargar todos los restaurantes de una sola vez
-      if (!loadMore) {
-        _allRestaurants = await _restaurantRepository.fetchRestaurants();
 
-        // Actualizar caché
-        final cacheData = _allRestaurants.map((r) => r.toJson()).toList();
-        await prefs.setString(_cacheKey, json.encode(cacheData));
-        await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
-      }
+  Future<void> _loadFromNetwork(SharedPreferences prefs) async {
+    try {
+      _allRestaurants = await _restaurantRepository.fetchRestaurants();
+
+      // Actualizar caché
+      final cacheData = _allRestaurants.map((r) => r.toJson()).toList();
+      await prefs.setString(_cacheKey, json.encode(cacheData));
+      await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
-      await _loadFromCache(prefs);
+      print("Error loading from network: $e");
       throw e;
     }
   }
 
-  Future<void> loadMoreItems() {
+  Future<void> loadMoreItems() async {
     if (hasMoreItems) {
+      _isLoadingMore = true;
+      notifyListeners();
+
+      await Future.delayed(Duration(milliseconds: 500)); // Simular carga
       _currentPage++;
+
+      _isLoadingMore = false;
       notifyListeners();
     }
-    return Future.value();
   }
 
   Future<void> _loadFromCache(SharedPreferences prefs) async {
     try {
       final cachedData = prefs.getString(_cacheKey);
-      final cachedTimestamp = prefs.getInt(_cacheDurationKey) ?? 0;
-      final cacheAge = DateTime.now().difference(
-          DateTime.fromMillisecondsSinceEpoch(cachedTimestamp)
-      );
-
-      if (cachedData != null && cacheAge < _cacheDuration) {
+      if (cachedData != null) {
         final List<dynamic> jsonData = json.decode(cachedData);
-        _restaurants = jsonData.map((json) => Restaurant.fromJson(json)).toList();
-      } else {
-        _restaurants = [];
-        _errorMessage = "No cached data available";
+        _allRestaurants = jsonData.map((json) => Restaurant.fromJson(json)).toList();
       }
     } catch (e) {
-      _restaurants = [];
-      _errorMessage = "Error loading cached data";
       print("Error loading from cache: $e");
+      _allRestaurants = [];
     }
   }
 }

@@ -50,14 +50,14 @@ class _ProfileImageWithLRUCacheState extends State<ProfileImageWithLRUCache> {
     }
 
     try {
-      // 1. Verificar si está en caché
+
       final cachedImage = ProfileImageCache().get(widget.imageUrl!);
       if (cachedImage != null) {
         if (mounted) setState(() => _loading = false);
         return;
       }
 
-      // 2. Si no está en caché y hay conexión, cargar de red
+
       if (widget.isOnline) {
         final networkImage = NetworkImage(widget.imageUrl!);
         final stream = networkImage.resolve(ImageConfiguration.empty);
@@ -75,7 +75,7 @@ class _ProfileImageWithLRUCacheState extends State<ProfileImageWithLRUCache> {
           }
         }));
       } else {
-        // 3. Sin conexión y no en caché
+
         if (mounted) {
           setState(() {
           _loading = false;
