@@ -4,8 +4,12 @@ class OrderModel {
   final String productName;
   final int quantity;
   final double price;
-  final String orderDate;
   final String status;
+  final String orderDate;
+  final DateTime? statusUpdatedAt;
+  final String? cancelledAt;
+  final String? cancelledBy;
+
 
   OrderModel({
     required this.orderId,
@@ -13,10 +17,29 @@ class OrderModel {
     required this.productName,
     required this.quantity,
     required this.price,
-    required this.orderDate,
     required this.status,
+    required this.orderDate,
+    this.statusUpdatedAt,
+    this.cancelledAt,
+    this.cancelledBy
   });
 
+  factory OrderModel.fromMap(Map<String, dynamic> map) {
+    return OrderModel(
+      orderId: map['orderId'],
+      productId: map['productId'],
+      productName: map['productName'],
+      quantity: map['quantity'],
+      price: map['price'].toDouble(),
+      status: map['status'],
+      orderDate: map['orderDate'],
+      statusUpdatedAt: map['statusUpdatedAt'] != null
+          ? DateTime.parse(map['statusUpdatedAt'])
+          : null,
+      cancelledAt: map['cancelledAt'],
+      cancelledBy: map['cancelledBy']
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
@@ -25,21 +48,11 @@ class OrderModel {
       'productName': productName,
       'quantity': quantity,
       'price': price,
-      'orderDate': orderDate,
       'status': status,
+      'orderDate': orderDate,
+      'statusUpdatedAt': statusUpdatedAt?.toIso8601String(),
+      'cancelledAt': cancelledAt,
+      'cancelledBy': cancelledBy,
     };
-  }
-
-  // Create from Map (from Firebase)
-  factory OrderModel.fromMap(Map<String, dynamic> map) {
-    return OrderModel(
-      orderId: map['orderId'],
-      productId: map['productId'],
-      productName: map['productName'],
-      quantity: map['quantity'],
-      price: map['price'].toDouble(),
-      orderDate: map['orderDate'],
-      status: map['status'],
-    );
   }
 }
