@@ -1,27 +1,16 @@
 import 'dart:isolate';
 import 'dart:async';
-import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:first_app/Models/order_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../ServiceAdapters/firebase_service_adapter.dart';
-
 
 abstract class OrderRepository {
   Future<void> saveOrder(OrderModel order);
   Future<List<OrderModel>> getOrders();
   Future<void> updateOrderStatus(String orderId, String newStatus);
-}
-
-// Clase para pasar datos al isolate
-class _IsolateData {
-  final SendPort sendPort;
-  final dynamic data;
-
-  _IsolateData(this.sendPort, this.data);
 }
 
 class OrderRepositoryImpl implements OrderRepository {
@@ -52,7 +41,10 @@ class OrderRepositoryImpl implements OrderRepository {
             quantity INTEGER,
             price REAL,
             orderDate TEXT,
-            status TEXT
+            status TEXT,
+            statusUpdatedAt TEXT,
+            cancelledAt TEXT,
+            cancelledBy TEXT
           )
         ''');
       },
@@ -60,35 +52,32 @@ class OrderRepositoryImpl implements OrderRepository {
   }
 
 
-  static void _parseOrdersInIsolate(_IsolateData isolateData) {
-    try {
-      if (isolateData.data is String) {
+  Future<List<OrderModel>> _parseOrdersInIsolate(List<Map<String, dynamic>> rawData) async {
+    final receivePort = ReceivePort();
 
-        final List<dynamic> jsonList = jsonDecode(isolateData.data);
-        final orders = jsonList.map((json) => OrderModel.fromMap(json)).toList();
-        isolateData.sendPort.send(orders);
-      } else if (isolateData.data is List<Map<String, dynamic>>) {
-        final orders = (isolateData.data as List<Map<String, dynamic>>)
-            .map((map) => OrderModel.fromMap(map))
-            .toList();
-        isolateData.sendPort.send(orders);
-      }
-    } catch (e) {
-      isolateData.sendPort.send([]);
+    await Isolate.spawn(_orderParsingIsolate, [receivePort.sendPort, rawData]);
+
+    final result = await receivePort.first;
+
+    if (result is List<OrderModel>) {
+      return result;
+    } else {
+      print('Error al procesar datos en isolate');
+      return [];
     }
   }
 
-  Future<List<OrderModel>> _processInIsolate(dynamic data) async {
-    final receivePort = ReceivePort();
+  void _orderParsingIsolate(List<dynamic> message) {
+    final SendPort sendPort = message[0];
+    final List<Map<String, dynamic>> rawData = List<Map<String, dynamic>>.from(message[1]);
 
-    await Isolate.spawn(
-      _parseOrdersInIsolate,
-      _IsolateData(receivePort.sendPort, data),
-    );
-
-    // Esperar el resultado del isolate
-    final result = await receivePort.first;
-    return result as List<OrderModel>;
+    try {
+      final List<OrderModel> orders = rawData.map((map) => OrderModel.fromMap(map)).toList();
+      sendPort.send(orders);
+    } catch (e) {
+      print('Error al convertir los datos en OrderModel: $e');
+      sendPort.send([]);
+    }
   }
 
   @override
@@ -103,7 +92,6 @@ class OrderRepositoryImpl implements OrderRepository {
             .doc(order.orderId)
             .set(order.toMap());
       }
-
       await _saveOrderToCache(order);
     } catch (e) {
       print('Error saving order: $e');
@@ -113,9 +101,11 @@ class OrderRepositoryImpl implements OrderRepository {
 
   Future<void> _saveOrderToCache(OrderModel order) async {
     final db = await database;
+    final orderMap = order.toMap();
+
     await db.insert(
       _tableName,
-      order.toMap(),
+      orderMap,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
 
@@ -151,7 +141,12 @@ class OrderRepositoryImpl implements OrderRepository {
       limit: _maxCachedOrders,
     );
 
-    return await _processInIsolate(dbData);
+    if (dbData.isEmpty) {
+      return [];
+    }
+
+    // Mantenemos el isolate solo para el cache
+    return await _parseOrdersInIsolate(dbData);
   }
 
   @override
@@ -159,114 +154,97 @@ class OrderRepositoryImpl implements OrderRepository {
     final userId = _getCurrentUserId();
 
     if (userId == null) {
+      print('Usuario no autenticado. Usando caché.');
       return await getOrdersFromCache();
     }
 
-    // Crear puerto de comunicación
-    final receivePort = ReceivePort();
-
     try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('orders')
+          .orderBy('orderDate', descending: true)
+          .limit(_maxCachedOrders)
+          .get();
 
-      await Isolate.spawn(
-        _fetchFirebaseOrdersInIsolate,
-        _FirebaseIsolateData(
-            receivePort.sendPort,
-            userId,
-            _maxCachedOrders
-        ),
-      );
+      // Procesamiento directo sin isolate
+      final results = snapshot.docs
+          .map((doc) => OrderModel.fromMap(doc.data()))
+          .toList();
 
-      // Esperar los resultados del isolate
-      final results = await receivePort.first as _FirebaseIsolateResult;
-
-      if (results.error != null) {
-        print('Error en isolate: ${results.error}');
-        return await getOrdersFromCache();
+      if (results.isEmpty) {
+        return [];
       }
 
-      // Guardar en caché
+      // Actualizar cache
       final db = await database;
       await db.transaction((txn) async {
         await txn.delete(_tableName);
-        for (final order in results.orders) {
-          await txn.insert(_tableName, order.toMap());
+        for (final order in results) {
+          await txn.insert(
+            _tableName,
+            order.toMap(),
+            conflictAlgorithm: ConflictAlgorithm.replace,
+          );
         }
       });
 
-      return results.orders;
+      return results;
     } catch (e) {
-      print('Error en comunicación con isolate: $e');
+      print('Error al obtener pedidos: $e');
       return await getOrdersFromCache();
-    } finally {
-      receivePort.close();
     }
   }
-
-
 
   @override
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
+      final now = DateTime.now();
+      final updateData = {
+        'status': newStatus,
+        'statusUpdatedAt': now.toIso8601String(),
+      };
+
+      if (newStatus == 'cancelled') {
+        updateData['cancelledAt'] = now.toIso8601String();
+        updateData['cancelledBy'] = user?.uid ?? 'system';
+      }
+
       if (user != null) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('orders')
             .doc(orderId)
-            .update({'status': newStatus});
+            .update(updateData);
       }
 
-
+      // Update local cache
       final db = await database;
+      final dbUpdateData = {
+        'status': newStatus,
+        'statusUpdatedAt': now.toIso8601String(),
+      };
+
+      if (newStatus == 'cancelled') {
+        dbUpdateData['cancelledAt'] = now.toIso8601String();
+        dbUpdateData['cancelledBy'] = user?.uid ?? 'system';
+      }
+
       await db.update(
         _tableName,
-        {'status': newStatus},
+        dbUpdateData,
         where: 'orderId = ?',
         whereArgs: [orderId],
       );
     } catch (e) {
       print('Error updating order status: $e');
+      rethrow;
     }
   }
 
   String? _getCurrentUserId() {
     return FirebaseAuth.instance.currentUser?.uid;
   }
-}
-class _FirebaseIsolateData {
-  final SendPort sendPort;
-  final String userId;
-  final int limit;
-
-  _FirebaseIsolateData(this.sendPort, this.userId, this.limit);
-}
-
-// Estructura para recibir resultados del isolate
-class _FirebaseIsolateResult {
-  final List<OrderModel> orders;
-  final String? error;
-
-  _FirebaseIsolateResult(this.orders, this.error);
-}
-
-// Función que se ejecuta en el isolate
-void _fetchFirebaseOrdersInIsolate(_FirebaseIsolateData data) async {
-try {
-final snapshot = await FirebaseFirestore.instance
-    .collection('users')
-    .doc(data.userId)
-    .collection('orders')
-    .orderBy('orderDate', descending: true)
-    .limit(data.limit)
-    .get();
-
-final orders = snapshot.docs
-    .map((doc) => OrderModel.fromMap(doc.data()))
-    .toList();
-
-data.sendPort.send(_FirebaseIsolateResult(orders, null));
-} catch (e) {
-data.sendPort.send(_FirebaseIsolateResult([], e.toString()));
-}
 }
