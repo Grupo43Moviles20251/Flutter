@@ -110,7 +110,7 @@ class HomeViewModel extends ChangeNotifier {
       _allRestaurants = await _restaurantRepository.fetchRestaurants();
 
       // Actualizar caché
-      final cacheData = _allRestaurants.map((r) => r.toJson()).toList();
+      final cacheData = _allRestaurants.take(5).map((r) => r.toJson()).toList();
       await prefs.setString(_cacheKey, json.encode(cacheData));
       await prefs.setInt(_cacheDurationKey, DateTime.now().millisecondsSinceEpoch);
     } catch (e) {
