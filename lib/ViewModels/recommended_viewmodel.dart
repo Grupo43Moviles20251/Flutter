@@ -59,4 +59,9 @@ class RecommendedViewModel extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  Future<void> loadTop3FromCache() async {
+    _restaurants = await _repository.getTop3FromCache();
+    notifyListeners();
+  }
 }

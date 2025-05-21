@@ -13,12 +13,19 @@ class RecommendedPage extends StatefulWidget {
 
 class _RecommendedPageState extends State<RecommendedPage> {
   bool _hasInternet = true;
+  late RecommendedViewModel _viewModel;
   late Stream<List<ConnectivityResult>> _connectivityStream;
 
   @override
   void initState() {
     super.initState();
-    _checkInternetConnection();
+    _viewModel = RecommendedViewModel();
+    _checkInternetConnection().then((_) {
+      _hasInternet
+          ? _viewModel.loadRecommended()
+          : _viewModel.loadTop3FromCache();
+    });
+
     _connectivityStream = Connectivity().onConnectivityChanged;
     _connectivityStream.listen((result) {
       _updateConnectionStatus(result);
@@ -31,15 +38,23 @@ class _RecommendedPageState extends State<RecommendedPage> {
   }
 
   void _updateConnectionStatus(List<ConnectivityResult> result) {
-    setState(() {
-      _hasInternet = !result.contains(ConnectivityResult.none);
-    });
+    final connected = !result.contains(ConnectivityResult.none);
+    if (_hasInternet != connected) {
+      setState(() {
+        _hasInternet = connected;
+      });
+
+      // Si cambia el estado, recargamos desde red o caché
+      connected
+          ? _viewModel.loadRecommended()
+          : _viewModel.loadTop3FromCache();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => RecommendedViewModel()..loadRecommended(),
+    return ChangeNotifierProvider.value(
+      value: _viewModel,
       child: Consumer<RecommendedViewModel>(
         builder: (context, vm, _) {
           return CustomScaffold(
@@ -94,25 +109,13 @@ class _RecommendedPageState extends State<RecommendedPage> {
                         // CONTENIDO
                         if (vm.isLoading && vm.restaurants.isEmpty)
                           Expanded(child: Center(child: CircularProgressIndicator()))
-                        else if (!_hasInternet && vm.restaurants.isEmpty)
-                          Expanded(
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Text('No internet connection'),
-                                  Text('Please connect to the internet to view recommendations'),
-                                ],
-                              ),
-                            ),
-                          )
                         else if (vm.restaurants.isEmpty)
                           Expanded(
                             child: Center(
                               child: Text(
-                                "No recommendations available at the moment.",
+                                _hasInternet
+                                    ? "No recommendations available at the moment."
+                                    : "No cached recommendations found.",
                                 style: TextStyle(fontSize: 16),
                               ),
                             ),
