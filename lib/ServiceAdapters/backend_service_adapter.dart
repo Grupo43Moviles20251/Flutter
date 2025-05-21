@@ -111,44 +111,43 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
   }
 
   @override
-  Future<List<Restaurant>> fetchRestaurantsByType(int type) async {
-    try {
-      print(type);
-      var response = await http.get(Uri.parse('$baseUrl/type/$type'));
-
-      if (response.statusCode == 200) {
-        List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Restaurant.fromJson(json)).toList();
-      } else {
-        throw Exception("Error al obtener restaurantes por tipo");
-      }
-    } catch (e) {
-      return [];
+Future<List<Restaurant>> fetchRestaurantsByType(int type) {
+  print(type);
+  return http.get(Uri.parse('$baseUrl/type/$type')).then((response) {
+    if (response.statusCode == 200) {
+      List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => Restaurant.fromJson(json)).toList();
+    } else {
+      throw Exception("Error al obtener restaurantes por tipo");
     }
-  }
+  }).catchError((e) {
+    print("Error en fetchRestaurantsByType: $e");
+    return <Restaurant>[]; // Lista vacía si falla
+  });
+}
+
 
   @override
-  Future<List<Restaurant>> searchRestaurants(String query, {int? type}) async {
-    try {
-      String url = '$baseUrl/restaurants/search/$query';
+Future<List<Restaurant>> searchRestaurants(String query, {int? type}) {
+  String url = '$baseUrl/restaurants/search/$query';
 
-      if (type != null) {
-        url = '$baseUrl/restaurants/type/$type';
-      }
-
-      var response = await http.get(Uri.parse(url));
-
-      if (response.statusCode == 200) {
-        List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Restaurant.fromJson(json)).toList();
-      } else {
-        throw Exception("Error al buscar restaurantes");
-      }
-    } catch (e) {
-      print("Error en searchRestaurants: $e");
-      return [];
-    }
+  if (type != null) {
+    url = '$baseUrl/restaurants/type/$type';
   }
+
+  return http.get(Uri.parse(url)).then((response) {
+    if (response.statusCode == 200) {
+      List<dynamic> jsonList = json.decode(response.body);
+      return jsonList.map((json) => Restaurant.fromJson(json)).toList();
+    } else {
+      throw Exception("Error al buscar restaurantes");
+    }
+  }).catchError((e) {
+    print("Error en searchRestaurants: $e");
+    return <Restaurant>[]; // Lista vacía si falla
+  });
+}
+
 
   @override
   Future<String> signUp(String name, String email, String password, String address, String birthday) async {
