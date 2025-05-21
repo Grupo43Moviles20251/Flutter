@@ -50,7 +50,7 @@ class LoginViewModel {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) =>  HomePage(),
+              builder: (context) =>  HomePageWrapper(selectedIndex: 0,),
               settings: RouteSettings(name: "HomePage")
           ),
         );
@@ -112,11 +112,11 @@ class LoginViewModel {
        await prefs.setBool('isLoggedIn', true);
 
        if(!context.mounted) return;
-       // Navigate to home page if login is successfull
+
        Navigator.pushReplacement(
          context,
          MaterialPageRoute(
-             builder: (context) =>  HomePage(),
+             builder: (context) =>  HomePageWrapper(),
              settings: RouteSettings(name: "HomePage")
          ),
        );

@@ -29,7 +29,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF38677A)),
       ),
-      home: isLoggedIn ?  HomePage():  LoginPage(),
+      home: isLoggedIn ?  HomePageWrapper():  LoginPage(),
     );
   }
 }
