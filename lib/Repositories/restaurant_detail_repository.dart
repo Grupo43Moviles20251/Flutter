@@ -1,5 +1,4 @@
 import 'package:first_app/ServiceAdapters/firebase_service_adapter.dart';
-import 'package:http/http.dart' as http;
 
 import '../ServiceAdapters/backend_service_adapter.dart';
 
@@ -11,7 +10,7 @@ abstract class RestaurantDetailRepository {
 }
 
 class restaurantDetailRepository implements RestaurantDetailRepository{
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl();
    final FirebaseServiceAdapter firebaseServiceAdapter = FirebaseServiceAdapterImpl();
   @override
   Future<String?> orderItem(int itemId, int quantity) {

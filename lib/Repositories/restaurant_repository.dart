@@ -1,9 +1,8 @@
 import 'package:first_app/Models/restaurant_model.dart';
 import 'package:first_app/ServiceAdapters/backend_service_adapter.dart';
-import 'package:http/http.dart' as http;
 
 class RestaurantRepository {
-  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
+  final BackendServiceAdapter backendServiceAdapter =  BackendServiceAdapterImpl();
 
 
   // Obtener todos los restaurantes
