@@ -4,6 +4,7 @@ import 'package:first_app/ViewModels/favorites_viewmodel.dart';
 import 'package:first_app/Widgets/custom_scaffold.dart';
 import 'package:first_app/Widgets/restaurant_card.dart';
 import 'package:first_app/Pages/restaurant_detail_page.dart';
+import 'package:first_app/Pages/recommended_page.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 class FavoritesPage extends StatefulWidget {
@@ -45,14 +46,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
       create: (_) {
         final _viewModel = FavoritesViewModel();
         if (_hasInternet) {
-          _viewModel.fetchFavorites(); // Initial load only if online
+          _viewModel.fetchFavorites();
         }
         return _viewModel;
       },
       child: Consumer<FavoritesViewModel>(
         builder: (context, vm, child) {
           return CustomScaffold(
-            selectedIndex: 1, // índice de favoritos
+            selectedIndex: 1,
             body: Column(
               children: [
                 if (!_hasInternet)
@@ -75,14 +76,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     onRefresh: _hasInternet
                         ? () => vm.fetchFavorites()
                         : () async {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('No internet connection. Cannot refresh favorites.'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return Future.value();
-                    },
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('No internet connection. Cannot refresh favorites.'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                            return Future.value();
+                          },
                     child: _buildContent(vm),
                   ),
                 ),
@@ -100,14 +101,14 @@ class _FavoritesPageState extends State<FavoritesPage> {
         child: _hasInternet
             ? CircularProgressIndicator()
             : Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No internet connection'),
-            Text('Please connect to the internet to view favorites'),
-          ],
-        ),
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('No internet connection'),
+                  Text('Please connect to the internet to view favorites'),
+                ],
+              ),
       );
     }
 
@@ -127,16 +128,26 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     if (vm.favorites.isEmpty) {
       return Center(
-        child: Text(
-          "¡Ups! No tienes ningún favorito aún.",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.favorite_border, size: 80, color: Colors.grey),
+            SizedBox(height: 20),
+            Text("¡Ups! No tienes ningún favorito aún."),
+            SizedBox(height: 16),
+            _buildRecommendedButton(),
+          ],
         ),
       );
     }
 
     return Column(
       children: [
+        // 🔹 Botón arriba si sí hay favoritos
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: _buildRecommendedButton(),
+        ),
         Expanded(
           child: ListView.builder(
             itemCount: vm.favorites.length,
@@ -187,6 +198,33 @@ class _FavoritesPageState extends State<FavoritesPage> {
             ),
           ),
       ],
+    );
+  }
+
+  /// 🔹 Botón estilizado para ir a recomendados
+  Widget _buildRecommendedButton() {
+    return ElevatedButton.icon(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => RecommendedPage()),
+        );
+      },
+      icon: Icon(Icons.star, color: Colors.white),
+      label: Text(
+        'Explorar recomendados',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 16,
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFF2A9D8F),
+        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 5,
+      ),
     );
   }
 }
