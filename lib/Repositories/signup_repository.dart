@@ -1,5 +1,3 @@
-import 'package:http/http.dart' as http;
-
 import '../ServiceAdapters/backend_service_adapter.dart';
 
 abstract class SignUpRepository {
@@ -14,7 +12,7 @@ abstract class SignUpRepository {
 
 class SignUpRepositoryImpl implements SignUpRepository {
 
-  final BackendServiceAdapter _backendServiceAdapter =  BackendServiceAdapterImpl(baseUrl:  'http://34.60.49.32:8000', client: http.Client());
+  final BackendServiceAdapter _backendServiceAdapter =  BackendServiceAdapterImpl();
 
   @override
   Future<String> signUp(

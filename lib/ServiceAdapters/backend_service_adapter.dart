@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:isolate';  // Importante para trabajar con Isolates
 import 'package:first_app/Models/restaurant_model.dart';
@@ -19,24 +20,63 @@ abstract class BackendServiceAdapter {
 }
 
 class BackendServiceAdapterImpl implements BackendServiceAdapter {
-  final String baseUrl;
-  final http.Client client;
+  final String baseUrl = 'http://34.60.49.32:8000';
+  late final http.Client _client;
+  Timer? _connectionCleanupTimer;
 
-  BackendServiceAdapterImpl({
-    required this.baseUrl,
-    required this.client,
-  });
+  BackendServiceAdapterImpl() : _client = http.Client() {
+    // Configurar un timer para cerrar conexiones inactivas después de un tiempo
+    _connectionCleanupTimer = Timer.periodic(Duration(minutes: 10), (_) {
+      _client.close();
+      _client = http.Client();
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectionCleanupTimer?.cancel();
+    _client.close();
+  }
+
+
+  Future<http.Response> _sendRequest(
+      String method,
+      String endpoint, {
+        Map<String, String>? headers,
+        Object? body,
+      }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/$endpoint');
+      final requestHeaders = {
+        'Content-Type': 'application/json',
+        ...?headers,
+      };
+
+      switch (method.toLowerCase()) {
+        case 'get':
+          return await _client.get(uri, headers: requestHeaders);
+        case 'post':
+          return await _client.post(
+            uri,
+            headers: requestHeaders,
+            body: body != null ? json.encode(body) : null,
+          );
+        default:
+          throw Exception('Unsupported HTTP method');
+      }
+    } catch (e) {
+      print('Request error: $e');
+      throw Exception('Network error occurred');
+    }
+  }
 
   @override
   Future<UserDTO> getUserProfile(String token) async {
-    final response = await client.get(
-      Uri.parse('$baseUrl/users/me'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
+    final response = await _sendRequest(
+      'get',
+      'users/me',
+      headers: {'Authorization': 'Bearer $token'},
     ).timeout(const Duration(seconds: 10));
-
 
     if (response.statusCode == 200) {
       return UserDTO.fromJson(json.decode(response.body));
@@ -47,31 +87,28 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
 
   @override
   Future<UserDTO> createUser(UserDTO user, String token) async {
-    final response = await client.post(
-      Uri.parse('$baseUrl/signup'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode(user.toJson()),
+    final response = await _sendRequest(
+      'post',
+      'signup',
+      headers: {'Authorization': 'Bearer $token'},
+      body: user.toJson(),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return UserDTO.fromJson(json.decode(response.body));
-    } else if(response.statusCode == 409){
+    } else if (response.statusCode == 409) {
       throw Exception('This email is already registered');
-    }
-    else {
-      throw Exception('Failed to create user');
+    } else {
+      throw Exception('Failed to create user: ${response.statusCode}');
     }
   }
+
 
   // Usamos Isolates para procesar grandes cantidades de datos sin bloquear la UI
   @override
   Future<List<Restaurant>> fetchRestaurants() async {
     try {
-      print("Fetching all restaurants from $baseUrl/restaurants");
-      final response = await http.get(Uri.parse('$baseUrl/restaurants'));
+      final response = await _sendRequest('get', 'restaurants');
 
       if (response.statusCode == 200) {
         return await _processInIsolate(response.body);
@@ -111,81 +148,78 @@ class BackendServiceAdapterImpl implements BackendServiceAdapter {
   }
 
   @override
-Future<List<Restaurant>> fetchRestaurantsByType(int type) {
-  print(type);
-  return http.get(Uri.parse('$baseUrl/type/$type')).then((response) {
-    if (response.statusCode == 200) {
-      List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => Restaurant.fromJson(json)).toList();
-    } else {
-      throw Exception("Error al obtener restaurantes por tipo");
+  Future<List<Restaurant>> fetchRestaurantsByType(int type) async {
+    try {
+      final response = await _sendRequest('get', 'type/$type');
+
+      if (response.statusCode == 200) {
+        return await _processInIsolate(response.body);
+      } else {
+        throw Exception('Error fetching restaurants by type: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error in fetchRestaurantsByType: $e");
+      return [];
     }
-  }).catchError((e) {
-    print("Error en fetchRestaurantsByType: $e");
-    return <Restaurant>[]; // Lista vacía si falla
-  });
-}
+  }
 
 
   @override
-Future<List<Restaurant>> searchRestaurants(String query, {int? type}) {
-  String url = '$baseUrl/restaurants/search/$query';
+  Future<List<Restaurant>> searchRestaurants(String query, {int? type}) async {
+    try {
+      final endpoint = type != null
+          ? 'restaurants/type/$type'
+          : 'restaurants/search/$query';
 
-  if (type != null) {
-    url = '$baseUrl/restaurants/type/$type';
-  }
+      final response = await _sendRequest('get', endpoint);
 
-  return http.get(Uri.parse(url)).then((response) {
-    if (response.statusCode == 200) {
-      List<dynamic> jsonList = json.decode(response.body);
-      return jsonList.map((json) => Restaurant.fromJson(json)).toList();
-    } else {
-      throw Exception("Error al buscar restaurantes");
+      if (response.statusCode == 200) {
+        return await _processInIsolate(response.body);
+      } else {
+        throw Exception('Error searching restaurants: ${response.statusCode}');
+      }
+    } catch (e) {
+      print("Error in searchRestaurants: $e");
+      return [];
     }
-  }).catchError((e) {
-    print("Error en searchRestaurants: $e");
-    return <Restaurant>[]; // Lista vacía si falla
-  });
-}
+  }
 
 
   @override
   Future<String> signUp(String name, String email, String password, String address, String birthday) async {
     try {
-      var response = await http.post(
-        Uri.parse('$baseUrl/signup'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+      final response = await _sendRequest(
+        'post',
+        'signup',
+        body: {
           'name': name,
           'email': email,
           'password': password,
           'address': address,
           'birthday': birthday,
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
         return "Success";
-
-      }else {
-
-        return "Could not create the user";
+      } else {
+        return "Could not create the user: ${response.statusCode}";
       }
     } catch (e) {
-      return "Error creating the user";
+      return "Error creating the user: $e";
     }
   }
 
   @override
   Future<String> orderItem(int itemId, int quantity) async {
     try {
-      var response = await http.post(
-        Uri.parse('$baseUrl/order'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
+      final response = await _sendRequest(
+        'post',
+        'order',
+        body: {
           'product_id': itemId,
           'quantity': quantity
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
@@ -193,10 +227,10 @@ Future<List<Restaurant>> searchRestaurants(String query, {int? type}) {
         final claimCode = data['code'];
         return claimCode;
       } else {
-        return "Could not order the item";
+        return "Could not order the item: ${response.statusCode}";
       }
     } catch (e) {
-      return "Error ordering the item";
+      return "Error ordering the item: $e";
     }
   }
 

@@ -44,7 +44,7 @@ class CustomScaffold extends StatelessWidget {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (context) => HomePage(selectedIndex: 0),
+                  builder: (context) => HomePageWrapper(selectedIndex: 0),
                   settings: RouteSettings(name: "HomePage")
               ),
 

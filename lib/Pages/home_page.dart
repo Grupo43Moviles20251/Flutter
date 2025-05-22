@@ -8,7 +8,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 
 class HomePage extends StatefulWidget {
   final int selectedIndex;
-  HomePage({this.selectedIndex = 0, Key? key}) : super(key: key);
+  const HomePage({this.selectedIndex = 0, Key? key}) : super(key: key);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -18,11 +18,24 @@ class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
   bool _hasInternet = true;
   late Stream<List<ConnectivityResult>> _connectivityStream;
+  bool _isProviderInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isProviderInitialized) {
+      _isProviderInitialized = true;
+      _initializeScrollListener();
+    }
+  }
+
+  void _initializeScrollListener() {
+    _scrollController.addListener(_scrollListener);
+  }
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_scrollListener);
     _checkInternetConnection();
     _connectivityStream = Connectivity().onConnectivityChanged;
     _connectivityStream.listen((result) {
@@ -59,59 +72,53 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => HomeViewModel(),
-      child: Consumer<HomeViewModel>(
-        builder: (context, viewModel, _) {
-          return CustomScaffold(
-            selectedIndex: widget.selectedIndex,
-            body: Column(
-              children: [
-                if (!_hasInternet)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    color: Colors.red,
-                    child: const Row(
-                      children: [
-                        Icon(Icons.wifi_off, color: Colors.white),
-                        SizedBox(width: 8),
-                        Text(
-                          'No internet connection',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ],
-                    ),
+    final viewModel = Provider.of<HomeViewModel>(context);
+
+    return CustomScaffold(
+      selectedIndex: widget.selectedIndex,
+      body: Column(
+        children: [
+          if (!_hasInternet)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.red,
+              child: const Row(
+                children: [
+                  Icon(Icons.wifi_off, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'No internet connection',
+                    style: TextStyle(color: Colors.white),
                   ),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _hasInternet
-                        ? () => viewModel.loadRestaurants()
-                        : () async {},
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Título
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            "Products for you",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'MontserratAlternates',
-                              color: Color(0xFF2A9D8F),
-                            ),
-                          ),
-                        ),
-                        _buildContent(viewModel),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _hasInternet
+                  ? () => viewModel.loadRestaurants()
+                  : () async {},
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "Products for you",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'MontserratAlternates',
+                        color: Color(0xFF2A9D8F),
+                      ),
+                    ),
+                  ),
+                  _buildContent(viewModel),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -121,14 +128,14 @@ class _HomePageState extends State<HomePage> {
       return Expanded(
         child: Center(
           child: _hasInternet
-              ? CircularProgressIndicator()
+              ? const CircularProgressIndicator()
               : Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('No internet connection'),
-              Text('Please connect to the internet to view restaurants'),
+              const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('No internet connection'),
+              const Text('Please connect to the internet to view restaurants'),
             ],
           ),
         ),
@@ -141,10 +148,10 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('No internet connection'),
-              Text('Please connect to the internet to view restaurants'),
+              const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+              const SizedBox(height: 16),
+              const Text('No internet connection'),
+              const Text('Please connect to the internet to view restaurants'),
             ],
           ),
         ),
@@ -169,7 +176,7 @@ class _HomePageState extends State<HomePage> {
                       viewModel.toggleFavorite(r);
                     } else {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
+                        const SnackBar(
                           content: Text('No internet connection. Cannot toggle favorite.'),
                           duration: Duration(seconds: 2),
                         ),
@@ -181,7 +188,7 @@ class _HomePageState extends State<HomePage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => RestaurantDetailPage(restaurant: r),
-                        settings: RouteSettings(name: "RestaurantDetail"),
+                        settings: const RouteSettings(name: "RestaurantDetail"),
                       ),
                     );
                   },
@@ -190,8 +197,8 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           if (viewModel.isLoadingMore)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            const Padding(
+              padding: EdgeInsets.all(16.0),
               child: CircularProgressIndicator(),
             ),
           if (viewModel.hasMoreItems && !viewModel.isLoadingMore && _hasInternet)
@@ -199,15 +206,28 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.all(8.0),
               child: ElevatedButton(
                 onPressed: () => viewModel.loadMoreItems(),
-                child: Text('Load More'),
+                child: const Text('Load More'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF2A9D8F),
-                  minimumSize: Size(double.infinity, 50),
+                  backgroundColor: const Color(0xFF2A9D8F),
+                  minimumSize: const Size(double.infinity, 50),
                 ),
               ),
             ),
         ],
       ),
+    );
+  }
+}
+
+class HomePageWrapper extends StatelessWidget {
+  final int selectedIndex;
+  const HomePageWrapper({this.selectedIndex = 0, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => HomeViewModel(),
+      child: HomePage(selectedIndex: selectedIndex),
     );
   }
 }

@@ -7,8 +7,7 @@ import 'dart:convert';
 
 class RecommendedRepository {
   final backend = BackendServiceAdapterImpl(
-    baseUrl: "http://34.60.49.32:8000", 
-    client: http.Client(),
+
   );
 
   final analytics = AnalyticsServiceAdapterImpl(
