@@ -30,7 +30,7 @@ class TopRestaurantCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen con número del top
+            // Imagen + Top badge
             Stack(
               children: [
                 ClipRRect(
@@ -40,8 +40,10 @@ class TopRestaurantCard extends StatelessWidget {
                     height: 150,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(child: CircularProgressIndicator()),
-                    errorWidget: (context, url, error) => Icon(Icons.error),
+                    placeholder: (context, url) =>
+                        Center(child: CircularProgressIndicator()),
+                    errorWidget: (context, url, error) =>
+                        Icon(Icons.broken_image),
                   ),
                 ),
                 Positioned(
@@ -82,7 +84,7 @@ class TopRestaurantCard extends StatelessWidget {
               ),
             ),
 
-            // Icono de favorito
+            // Botón de favorito alineado a la derecha
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
@@ -99,7 +101,7 @@ class TopRestaurantCard extends StatelessWidget {
               ),
             ),
 
-            // Subtítulo + rating + precios
+            // Info del restaurante
             Padding(
               padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
@@ -113,6 +115,7 @@ class TopRestaurantCard extends StatelessWidget {
                   Row(
                     children: [
                       Icon(Icons.star, color: Colors.amber, size: 18),
+                      SizedBox(width: 4),
                       Text(
                         "${restaurant.rating}",
                         style: TextStyle(fontSize: 14, color: Colors.black),
