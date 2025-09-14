@@ -10,6 +10,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 class FavoritesPage extends StatefulWidget {
   final int selectedIndex;
   FavoritesPage({this.selectedIndex = 1});
+  
 
   @override
   _FavoritesPageState createState() => _FavoritesPageState();
